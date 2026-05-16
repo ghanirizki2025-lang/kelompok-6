@@ -1,1 +1,0 @@
-print("HEllo, Mas Sahid")
