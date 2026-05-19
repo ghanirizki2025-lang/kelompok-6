@@ -116,3 +116,24 @@ class BSTLokasi:
         else:
             # Kode yang dicari lebih besar → pergi ke kanan
             return self._search_rekursif(node.right, kode)
+        
+    # ------------------------------------------------------------------
+    # UPDATE LEVEL
+    # ------------------------------------------------------------------
+    def update_level(self, kode: str, level: int) -> bool:
+        """
+        Perbarui level bencana lokasi yang memiliki kode tertentu.
+        Big-O: O(log n) — cukup lakukan search lalu ubah atribut.
+
+        Parameter:
+            kode  : kode lokasi yang akan diperbarui
+            level : int baru (1=KRITIS, 2=SEDANG, 3=RINGAN)
+
+        Return:
+            True jika berhasil, False jika kode tidak ditemukan.
+        """
+        lok = self.search(kode)
+        if lok is not None:
+            lok.level = level   # langsung ubah karena objek adalah referensi
+            return True
+        return False
