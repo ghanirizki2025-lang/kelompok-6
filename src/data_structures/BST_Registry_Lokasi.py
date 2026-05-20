@@ -83,3 +83,36 @@ class BSTLokasi:
                 self._insert_rekursif(node.right, lokasi)
 
         # lokasi.kode == node.lokasi.kode → duplikat, abaikan
+
+    # ------------------------------------------------------------------
+    # SEARCH
+    # ------------------------------------------------------------------
+    def search(self, kode: str) -> Optional[object]:
+        """
+        Cari dan kembalikan objek Lokasi berdasarkan kode.
+        Kembalikan None jika tidak ditemukan.
+        Big-O: O(log n) rata-rata.
+
+        Parameter:
+            kode : string kode lokasi, mis. 'L010' atau 'DEPOT_1'
+
+        Return:
+            objek Lokasi jika ditemukan, None jika tidak.
+        """
+        return self._search_rekursif(self.root, kode)
+
+    def _search_rekursif(self, node: Optional[BSTNodeLok], kode: str):
+        """Helper rekursif untuk search."""
+        if node is None:
+            return None   # kode tidak ada dalam pohon
+
+        if kode == node.lokasi.kode:
+            return node.lokasi   # ketemu!
+
+        elif kode < node.lokasi.kode:
+            # Kode yang dicari lebih kecil → pergi ke kiri
+            return self._search_rekursif(node.left, kode)
+
+        else:
+            # Kode yang dicari lebih besar → pergi ke kanan
+            return self._search_rekursif(node.right, kode)
