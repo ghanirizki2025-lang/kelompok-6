@@ -161,3 +161,29 @@ class BSTLokasi:
         self._inorder_rekursif(node.left, hasil)    # kunjungi kiri dulu
         hasil.append(node.lokasi)                    # simpan akar
         self._inorder_rekursif(node.right, hasil)   # kunjungi kanan
+
+    # ------------------------------------------------------------------
+    # UTILITAS
+    # ------------------------------------------------------------------
+    def jumlah_node(self) -> int:
+        """Hitung total node dalam BST. Big-O: O(n)."""
+        return self._hitung_rekursif(self.root)
+
+    def _hitung_rekursif(self, node: Optional[BSTNodeLok]) -> int:
+        if node is None:
+            return 0
+        return 1 + self._hitung_rekursif(node.left) + self._hitung_rekursif(node.right)
+
+    def tinggi(self) -> int:
+        """Hitung tinggi pohon (jumlah level). Big-O: O(n)."""
+        return self._tinggi_rekursif(self.root)
+
+    def _tinggi_rekursif(self, node: Optional[BSTNodeLok]) -> int:
+        if node is None:
+            return 0
+        return 1 + max(self._tinggi_rekursif(node.left),
+                       self._tinggi_rekursif(node.right))
+
+    def __repr__(self) -> str:
+        semua = self.inorder()
+        return f"BSTLokasi({len(semua)} node, tinggi={self.tinggi()})"
