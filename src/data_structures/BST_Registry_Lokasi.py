@@ -137,3 +137,27 @@ class BSTLokasi:
             lok.level = level   # langsung ubah karena objek adalah referensi
             return True
         return False
+    
+    # ------------------------------------------------------------------
+    # INORDER TRAVERSAL
+    # ------------------------------------------------------------------
+    def inorder(self) -> List:
+        """
+        Kembalikan semua lokasi dalam urutan terurut by kode (ascending).
+        Traversal: kiri → akar → kanan.
+        Big-O: O(n) — setiap node dikunjungi tepat satu kali.
+
+        Return:
+            list objek Lokasi terurut leksikografis by kode.
+        """
+        hasil = []
+        self._inorder_rekursif(self.root, hasil)
+        return hasil
+
+    def _inorder_rekursif(self, node: Optional[BSTNodeLok], hasil: list):
+        """Helper rekursif untuk inorder traversal."""
+        if node is None:
+            return
+        self._inorder_rekursif(node.left, hasil)    # kunjungi kiri dulu
+        hasil.append(node.lokasi)                    # simpan akar
+        self._inorder_rekursif(node.right, hasil)   # kunjungi kanan
