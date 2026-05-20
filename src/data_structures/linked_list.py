@@ -1,13 +1,3 @@
-# =============================================================================
-# linked_list.py
-# Implementasi dasar Node dan LinkedList yang dipakai oleh semua modul lain.
-# Struktur ini menjadi fondasi untuk Stack, Queue, Graph, dan BST.
-#
-# Mata Kuliah : ELT60213 Algoritma dan Struktur Data
-# Topik       : 9 — Disaster Response Logistics System
-# =============================================================================
-
-
 class LLNode:
     """
     Satu unit simpul (node) dalam Linked List.
