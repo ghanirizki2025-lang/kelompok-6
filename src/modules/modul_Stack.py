@@ -1,97 +1,102 @@
-# =============================================================================
-# modul_4.py
-# Modul 4 — Stack Log Pengiriman
-#
-# Tanggung jawab modul ini:
-#   - Mencatat setiap transaksi pengiriman yang sudah diproses (push)
-#   - Menampilkan riwayat pengiriman dari yang terbaru (LOG_PENGIRIMAN)
-#   - Membatalkan pengiriman terakhir dan mengembalikan ke antrian (ROLLBACK)
-#
-# Mata Kuliah : ELT60213 Algoritma dan Struktur Data
-# Topik       : 9 — Disaster Response Logistics System
-# =============================================================================
-
-import time
-from src.data_structures.Stack_Log_Pengiriman import Stack
-from src.data_structures.queue_ll import PriorityQueueBantuan
-from src.models import Bantuan, LABEL_LEVEL
+class NodeStack:
+    """Node untuk menyimpan data transaksi logistik di dalam Linked List Stack."""
+    def __init__(self, data_log):
+        self.data_log = data_log  # Menyimpan dictionary data pengiriman
+        self.next = None          # Pointer ke node di bawahnya
 
 
-def catat_pengiriman(stack: Stack, bantuan: Bantuan):
-    """
-    Simpan transaksi pengiriman yang berhasil ke dalam Stack log.
-    Setiap entri menyimpan objek Bantuan beserta timestamp pengiriman.
+class StackLogPengiriman:
+    """Struktur data Stack (LIFO) untuk mencatat riwayat dan pembatalan logistik."""
+    def __init__(self):
+        self.top = None           # Pointer ke elemen teratas stack
+        self._ukuran = 0          # Menghitung jumlah log tersimpan
 
-    Parameter:
-        stack   : objek Stack sebagai log
-        bantuan : objek Bantuan yang baru selesai diproses
-    """
-    entri = {
-        'bantuan': bantuan,
-        'waktu': time.strftime('%H:%M:%S'),   # waktu saat dicatat
-        'tanggal': time.strftime('%Y-%m-%d'),
-    }
-    stack.push(entri)
+    def is_empty(self):
+        """Memeriksa apakah stack dalam kondisi kosong."""
+        return self.top is None
+
+    # 1. OPERASI: PUSH (Mencatat transaksi logistik baru - O(1))
+    def push(self, depot, lokasi, jenis, jumlah):
+        """
+        Memasukkan log pengiriman bantuan baru ke bagian atas stack.
+        Mendukung Big-O: push O(1).
+        """
+        data_log = {
+            "depot": depot,
+            "lokasi": lokasi,
+            "jenis": jenis,
+            "jumlah": jumlah
+        }
+        node_baru = NodeStack(data_log)
+        
+        # Kaitkan node baru ke top yang lama, lalu geser top ke node baru
+        node_baru.next = self.top
+        self.top = node_baru
+        self._ukuran += 1
+        return True
+
+    # 2. OPERASI: POP / ROLLBACK (Membatalkan pengiriman terakhir - O(1))
+    def pop(self):
+        """
+        Mengambil dan menghapus log pengiriman teratas (terbaru).
+        Mendukung Big-O: pop O(1).
+        Returns: dictionary data log jika ada, None jika stack kosong.
+        """
+        if self.is_empty():
+            return None
+        
+        node_diambil = self.top
+        self.top = self.top.next  # Geser top ke elemen di bawahnya
+        self._ukuran -= 1
+        
+        return node_diambil.data_log
+
+    # 3. OPERASI: LOG_PENGIRIMAN (Menampilkan riwayat Terbaru -> Lama)
+    def tampilkan_log(self):
+        """
+        Menampilkan seluruh riwayat pengiriman dari yang paling baru ke terlama.
+        Sesuai spesifikasi perintah LOG_PENGIRIMAN.
+        """
+        if self.is_empty():
+            print("📋 Riwayat log pengiriman kosong.")
+            return
+
+        print("📋 RIWAYAT LOG PENGIRIMAN (Terbaru -> Lama):")
+        current = self.top
+        no = 1
+        while current is not None:
+            log = current.data_log
+            print(f"   {no}. {log['jumlah']} {log['jenis']} ke {log['lokasi']} (Asal: {log['depot']})")
+            current = current.next
+            no += 1
 
 
-def tampilkan_log(stack: Stack):
-    """
-    Tampilkan seluruh riwayat pengiriman dari yang paling baru (top) ke lama.
-    Memanfaatkan to_list() agar stack tidak berubah.
+# ==============================================================================
+# CONTOH PENGGUNAAN & PENGUJIAN MODULE STACK
+# ==============================================================================
+if __name__ == "__main__":
+    print("=== DEMO TESTING STACK LOG PENGIRIMAN ===")
+    stack_logistik = StackLogPengiriman()
 
-    Parameter:
-        stack : objek Stack berisi riwayat pengiriman
-    """
-    riwayat = stack.to_list()   # top → bottom, tidak merusak stack
+    # 1. Simulasi mencatat beberapa pengiriman (PUSH)
+    print("\n🚀 Menambahkan log pengiriman logistik...")
+    stack_logistik.push(depot="DEPOT_0", lokasi="L002", jenis="Beras", jumlah="500 kg")
+    stack_logistik.push(depot="DEPOT_1", lokasi="L001", jenis="Tenda", jumlah="50 unit")
+    stack_logistik.push(depot="DEPOT_0", lokasi="L004", jenis="Obat-obatan", jumlah="200 paket")
 
-    if not riwayat:
-        print("  Belum ada pengiriman yang tercatat.")
-        return
+    # 2. Menampilkan riwayat (LOG_PENGIRIMAN)
+    # Harus tercetak urutan terbalik dari input (L004 -> L001 -> L002)
+    stack_logistik.tampilkan_log()
 
-    print(f"\n  {'─'*60}")
-    print(f"  RIWAYAT PENGIRIMAN — {len(riwayat)} transaksi (terbaru di atas)")
-    print(f"  {'─'*60}")
-    print(f"  {'No':<5} {'Waktu':<10} {'ID':<6} {'Jenis':<10} {'Jml':<6} {'Rute':<22} {'Level'}")
-    print(f"  {'─'*60}")
+    # 3. Simulasi Fitur Rollback Pengiriman Terakhir (POP)
+    print("\n⏪ Melakukan ROLLBACK pengiriman terakhir...")
+    log_batal = stack_logistik.pop()
+    if log_batal:
+        print(f"[ROLLBACK BERHASIL] Pengiriman terakhir dibatalkan!")
+        print(f"   Stok sebanyak {log_batal['jumlah']} {log_batal['jenis']} dikembalikan ke {log_batal['depot']}.")
+    else:
+        print("❌ Gagal Rollback: Tidak ada riwayat transaksi pengiriman yang bisa dibatalkan.")
 
-    for i, item in enumerate(riwayat, 1):
-        b = item['bantuan']
-        label = LABEL_LEVEL.get(b.prioritas, str(b.prioritas))
-        rute = f"{b.asal} → {b.tujuan}"
-        print(f"  {i:<5} {item['waktu']:<10} {b.bantuan_id:<6} "
-              f"{b.jenis:<10} {b.jumlah:<6} {rute:<22} {label}")
-
-    print(f"  {'─'*60}\n")
-
-
-def rollback_pengiriman(stack: Stack, antrian: PriorityQueueBantuan) -> bool:
-    """
-    Batalkan pengiriman terakhir:
-        1. Pop entri teratas dari stack log.
-        2. Kembalikan objek Bantuan ke antrian berprioritas.
-
-    Jika stack kosong, tidak ada yang dibatalkan.
-
-    Parameter:
-        stack   : objek Stack log pengiriman
-        antrian : objek PriorityQueueBantuan untuk menerima bantuan kembali
-
-    Return:
-        True jika rollback berhasil, False jika stack kosong.
-    """
-    entri = stack.pop()
-
-    if entri is None:
-        print("  Tidak ada pengiriman untuk di-rollback.")
-        return False
-
-    bantuan = entri['bantuan']
-    # Kembalikan bantuan ke antrian dengan prioritas semula
-    antrian.enqueue(bantuan)
-
-    label = LABEL_LEVEL.get(bantuan.prioritas, str(bantuan.prioritas))
-    print(f"  ✓ ROLLBACK: ID={bantuan.bantuan_id} ({bantuan.jenis} x{bantuan.jumlah} "
-          f"ke {bantuan.tujuan}) dibatalkan.")
-    print(f"  Bantuan dikembalikan ke antrian [{label}].")
-    print(f"  Sisa log: {len(stack)} transaksi | Antrian: {len(antrian)} item")
-    return True
+    # 4. Menampilkan kembali riwayat setelah rollback
+    print("\n📊 Kondisi log setelah dilakukan rollback:")
+    stack_logistik.tampilkan_log()
