@@ -1,10 +1,3 @@
-# ============================================================
-#  MODULE 1 : GRAPH JARINGAN RUTE
-#  Graf berbobot tidak berarah menggunakan Adjacency List
-#  berbasis Linked List.
-#  Big-O: add O(1), BFS O(V+E)
-# ============================================================
-
 
 class GNode:
     """Simpul dalam adjacency list (merepresentasikan satu tetangga)."""
