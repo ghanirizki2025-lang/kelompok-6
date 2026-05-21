@@ -1,155 +1,175 @@
-from typing import Optional, List
+# BST_Registry_Lokasi.py
+# implementasi Binary Search Tree buat nyimpen data lokasi bencana
+# kunci pencariannya pake kode lokasi (string), contoh: 'L001', 'DEPOT_0'
+# urutan: kode lebih kecil ke kiri, lebih besar ke kanan
 
 
+# --- node untuk tiap lokasi di pohon ---
 class BSTNodeLok:
-    """
-    Satu simpul dalam BST Lokasi.
-
-    Atribut:
-        lokasi : objek Lokasi yang disimpan
-        left   : anak kiri  (kode lebih kecil secara leksikografis)
-        right  : anak kanan (kode lebih besar)
-    """
 
     def __init__(self, lokasi):
-        self.lokasi = lokasi
-        self.left = None   # sub-pohon kiri
-        self.right = None  # sub-pohon kanan
+        self.lokasi = lokasi   # objek Lokasi yang disimpan di node ini
+        self.left   = None     # anak kiri
+        self.right  = None     # anak kanan
 
 
+# --- pohon BST-nya sendiri ---
 class BSTLokasi:
-    """
-    Binary Search Tree untuk menyimpan dan mengelola data lokasi bencana.
-
-    Kunci   : lokasi.kode (string), perbandingan leksikografis
-    Nilai   : objek Lokasi lengkap
-
-    Contoh urutan kode: DEPOT_0 < DEPOT_1 < L000 < L001 < ... < L034
-    """
 
     def __init__(self):
-        self.root = None   # akar pohon, awalnya kosong
+        self.root = None   # mulai kosong
 
+    # --- INSERT ---
     def insert(self, lokasi):
-        """
-        Masukkan lokasi baru ke BST.
-        Jika kode sudah ada, operasi diabaikan (tidak ada duplikat).
-        Big-O: O(log n) rata-rata, O(n) worst case (pohon tidak seimbang).
-
-        Parameter:
-            lokasi : objek Lokasi dengan atribut .kode (str)
-        """
+        # kalau pohon masih kosong, langsung jadi root
         if self.root is None:
             self.root = BSTNodeLok(lokasi)
-        else:
-            self._insert_rekursif(self.root, lokasi)
+            return
 
-    def _insert_rekursif(self, node: BSTNodeLok, lokasi):
-        """Helper rekursif untuk insert. Bandingkan kode secara leksikografis."""
+        # kalau udah ada isinya, cari posisi yang bener
+        self._insert_rekursif(self.root, lokasi)
+
+    def _insert_rekursif(self, node, lokasi):
+        # bandingkan kode baru sama kode node sekarang
         if lokasi.kode < node.lokasi.kode:
-            # Masuk sub-pohon kiri
+            # kode lebih kecil -> harusnya di kiri
             if node.left is None:
-                node.left = BSTNodeLok(lokasi)   # temukan slot kosong
+                node.left = BSTNodeLok(lokasi)
             else:
-                self._insert_rekursif(node.left, lokasi)  # terus ke bawah
+                self._insert_rekursif(node.left, lokasi)
 
         elif lokasi.kode > node.lokasi.kode:
-            # Masuk sub-pohon kanan
+            # kode lebih besar -> harusnya di kanan
             if node.right is None:
                 node.right = BSTNodeLok(lokasi)
             else:
                 self._insert_rekursif(node.right, lokasi)
 
-        # lokasi.kode == node.lokasi.kode → duplikat, abaikan
+        # kalau kodenya sama persis, skip aja (ga boleh duplikat)
 
-    def search(self, kode: str) -> Optional[object]:
-        """
-        Cari dan kembalikan objek Lokasi berdasarkan kode.
-        Kembalikan None jika tidak ditemukan.
-        Big-O: O(log n) rata-rata.
-
-        Parameter:
-            kode : string kode lokasi, mis. 'L010' atau 'DEPOT_1'
-
-        Return:
-            objek Lokasi jika ditemukan, None jika tidak.
-        """
+    # --- SEARCH ---
+    def search(self, kode):
+        # cari lokasi berdasarkan kodenya
+        # return objek Lokasi kalau ketemu, None kalau tidak
         return self._search_rekursif(self.root, kode)
 
-    def _search_rekursif(self, node: Optional[BSTNodeLok], kode: str):
-        """Helper rekursif untuk search."""
+    def _search_rekursif(self, node, kode):
+        # kalau node kosong berarti kode ga ada di pohon
         if node is None:
-            return None   # kode tidak ada dalam pohon
+            return None
 
         if kode == node.lokasi.kode:
-            return node.lokasi   # ketemu!
+            return node.lokasi   # ketemu
 
-        elif kode < node.lokasi.kode:
-            # Kode yang dicari lebih kecil → pergi ke kiri
+        if kode < node.lokasi.kode:
+            # cari ke kiri
             return self._search_rekursif(node.left, kode)
-
         else:
-            # Kode yang dicari lebih besar → pergi ke kanan
+            # cari ke kanan
             return self._search_rekursif(node.right, kode)
 
-    def update_level(self, kode: str, level: int) -> bool:
-        """
-        Perbarui level bencana lokasi yang memiliki kode tertentu.
-        Big-O: O(log n) — cukup lakukan search lalu ubah atribut.
-
-        Parameter:
-            kode  : kode lokasi yang akan diperbarui
-            level : int baru (1=KRITIS, 2=SEDANG, 3=RINGAN)
-
-        Return:
-            True jika berhasil, False jika kode tidak ditemukan.
-        """
+    # --- UPDATE LEVEL ---
+    def update_level(self, kode, level_baru):
+        # cari lokasinya dulu, terus ganti levelnya
+        # return True kalau berhasil, False kalau kode ga ketemu
         lok = self.search(kode)
-        if lok is not None:
-            lok.level = level   # langsung ubah karena objek adalah referensi
-            return True
-        return False
+        if lok is None:
+            return False
 
-    def inorder(self) -> List:
-        """
-        Kembalikan semua lokasi dalam urutan terurut by kode (ascending).
-        Traversal: kiri → akar → kanan.
-        Big-O: O(n) — setiap node dikunjungi tepat satu kali.
+        lok.level = level_baru   # objek lokasi langsung keubah karena reference
+        return True
 
-        Return:
-            list objek Lokasi terurut leksikografis by kode.
-        """
+    # --- INORDER TRAVERSAL ---
+    def inorder(self):
+        # kembalikan semua lokasi dalam urutan terurut by kode (kiri->akar->kanan)
+        # karena BST, hasil inorder otomatis dari kode terkecil ke terbesar
         hasil = []
         self._inorder_rekursif(self.root, hasil)
         return hasil
 
-    def _inorder_rekursif(self, node: Optional[BSTNodeLok], hasil: list):
-        """Helper rekursif untuk inorder traversal."""
+    def _inorder_rekursif(self, node, hasil):
         if node is None:
             return
-        self._inorder_rekursif(node.left, hasil)    # kunjungi kiri dulu
-        hasil.append(node.lokasi)                    # simpan akar
-        self._inorder_rekursif(node.right, hasil)   # kunjungi kanan
+        self._inorder_rekursif(node.left, hasil)    # kiri dulu
+        hasil.append(node.lokasi)                    # baru ambil isinya
+        self._inorder_rekursif(node.right, hasil)   # terus ke kanan
 
-    def jumlah_node(self) -> int:
-        """Hitung total node dalam BST. Big-O: O(n)."""
-        return self._hitung_rekursif(self.root)
+    # --- UTILITAS ---
+    def jumlah_node(self):
+        # hitung total node yang ada di pohon
+        return self._hitung(self.root)
 
-    def _hitung_rekursif(self, node: Optional[BSTNodeLok]) -> int:
+    def _hitung(self, node):
         if node is None:
             return 0
-        return 1 + self._hitung_rekursif(node.left) + self._hitung_rekursif(node.right)
+        # 1 (node ini) + semua node di kiri + semua node di kanan
+        return 1 + self._hitung(node.left) + self._hitung(node.right)
 
-    def tinggi(self) -> int:
-        """Hitung tinggi pohon (jumlah level). Big-O: O(n)."""
+    def tinggi(self):
+        # hitung tinggi pohon, berguna buat ngecek seberapa seimbang BST kita
         return self._tinggi_rekursif(self.root)
 
-    def _tinggi_rekursif(self, node: Optional[BSTNodeLok]) -> int:
+    def _tinggi_rekursif(self, node):
         if node is None:
             return 0
-        return 1 + max(self._tinggi_rekursif(node.left),
-                       self._tinggi_rekursif(node.right))
+        tinggi_kiri   = self._tinggi_rekursif(node.left)
+        tinggi_kanan  = self._tinggi_rekursif(node.right)
+        # ambil yang lebih tinggi, tambah 1 buat node sekarang
+        return 1 + max(tinggi_kiri, tinggi_kanan)
 
-    def __repr__(self) -> str:
-        semua = self.inorder()
-        return f"BSTLokasi({len(semua)} node, tinggi={self.tinggi()})"
+    def __repr__(self):
+        return f"BSTLokasi(node={self.jumlah_node()}, tinggi={self.tinggi()})"
+
+
+# testing langsung kalau file ini dijalankan sendiri
+if __name__ == '__main__':
+
+    from dataclasses import dataclass
+
+    @dataclass
+    class Lokasi:
+        kode: str
+        nama: str
+        level: int
+        populasi: int
+
+    print("test BST_Registry_Lokasi.py")
+    print("-" * 35)
+
+    bst = BSTLokasi()
+
+    # insert beberapa data
+    data = [
+        Lokasi('L010', 'Desa Sumber',   2, 1200),
+        Lokasi('L003', 'Kel. Maju',     1,  500),
+        Lokasi('L020', 'Desa Harapan',  3, 2000),
+        Lokasi('L007', 'Dusun Melati',  1,  300),
+        Lokasi('L015', 'Desa Damai',    2,  800),
+    ]
+
+    for d in data:
+        bst.insert(d)
+        print(f"  insert {d.kode}")
+
+    print(f"\nhasil: {bst}")
+
+    # test search
+    print("\ncari L007:", bst.search('L007'))
+    print("cari L999:", bst.search('L999'))
+
+    # test inorder (harusnya urut)
+    print("\ninorder traversal:")
+    for lok in bst.inorder():
+        print(f"  {lok.kode} - {lok.nama}")
+
+    # test update
+    print("\nupdate level L020 ke 1")
+    bst.update_level('L020', 1)
+    print("cek L020:", bst.search('L020').level)
+
+    # test duplikat
+    print("\ncoba insert L010 lagi (harus diabaikan)")
+    sebelum = bst.jumlah_node()
+    bst.insert(Lokasi('L010', 'duplikat', 3, 0))
+    sesudah = bst.jumlah_node()
+    print(f"  node sebelum: {sebelum}, sesudah: {sesudah} -> {'ok, ga berubah' if sebelum == sesudah else 'ERROR duplikat masuk'}")
