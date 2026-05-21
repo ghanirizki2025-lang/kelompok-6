@@ -1,7 +1,7 @@
 import sys
 
 # ==============================================================================
-# MOCK-UP MODUL 1 - 5 (Diperlukan agar CLI Modul 6 bisa berjalan & di-test)
+# MOCK-UP MODULE 1 - 5 (Diperlukan agar CLI Module 6 bisa berjalan & di-test)
 # ==============================================================================
 
 class DummyGraph:
@@ -66,7 +66,7 @@ def dummy_dijkstra(start, target):
     return [start, target], 15
 
 # ==============================================================================
-# UTAMA: MODUL 6 - CLI LOGISTIK
+# UTAMA: MODULE 6 - CLI LOGISTIK
 # ==============================================================================
 
 class CLILogistik:
