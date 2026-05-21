@@ -9,8 +9,8 @@
 class GNode:
     """Simpul dalam adjacency list (merepresentasikan satu tetangga)."""
     def __init__(self, tujuan: str, jarak: float):
-        self.tujuan = tujuan    # kode lokasi tujuan
-        self.jarak  = jarak     # bobot edge (km)
+        self.tujuan = tujuan
+        self.jarak  = jarak
         self.next   = None
 
 
@@ -21,13 +21,12 @@ class AdjList:
         self._size = 0
 
     def tambah(self, tujuan: str, jarak: float):
-        node = GNode(tujuan, jarak)
-        node.next  = self.head
-        self.head  = node
+        node      = GNode(tujuan, jarak)
+        node.next = self.head
+        self.head = node
         self._size += 1
 
     def semua(self) -> list:
-        """Kembalikan list of (tujuan, jarak)."""
         hasil, cur = [], self.head
         while cur:
             hasil.append((cur.tujuan, cur.jarak))
@@ -39,145 +38,76 @@ class AdjList:
 
 
 class Graph:
-    """
-    Graf berbobot tidak berarah untuk jaringan rute logistik.
-
-    Atribut:
-        _adj   : dict {kode_lokasi -> AdjList}
-        _nodes : set semua kode lokasi
-        depots : list kode depot (DEPOT_0, DEPOT_1, DEPOT_2)
-    """
-
     def __init__(self):
-        self._adj   = {}          # adjacency list
-        self._nodes = set()       # semua node
-        self.depots = []          # daftar depot terdaftar
+        self._adj   = {}
+        self._nodes = set()
+        self.depots = []
 
-    # ----------------------------------------------------------
-    # MANAJEMEN NODE
-    # ----------------------------------------------------------
     def tambah_node(self, kode: str, adalah_depot: bool = False):
-        """
-        Daftarkan lokasi baru ke dalam graf.
-        Jika adalah_depot=True, kode juga masuk ke self.depots.
-        Big-O: O(1)
-        """
         if kode not in self._adj:
             self._adj[kode]  = AdjList()
             self._nodes.add(kode)
         if adalah_depot and kode not in self.depots:
             self.depots.append(kode)
 
-    # ----------------------------------------------------------
-    # MANAJEMEN RUTE (EDGE)
-    # ----------------------------------------------------------
     def tambah_rute(self, asal: str, tujuan: str, jarak: float):
-        """
-        Tambahkan edge dua arah antara asal dan tujuan.
-        Node yang belum ada akan dibuat otomatis.
-        Big-O: O(1)
-        """
         for k in (asal, tujuan):
             if k not in self._adj:
                 self.tambah_node(k)
-
         self._adj[asal].tambah(tujuan, jarak)
         self._adj[tujuan].tambah(asal, jarak)
 
-    # ----------------------------------------------------------
-    # TETANGGA
-    # ----------------------------------------------------------
     def tetangga(self, kode: str) -> list:
-        """
-        Kembalikan list of (tujuan, jarak) tetangga sebuah node.
-        Big-O: O(degree(v))
-        """
         if kode not in self._adj:
             return []
         return self._adj[kode].semua()
 
-    # ----------------------------------------------------------
-    # BFS DARI DEPOT (deteksi lokasi terjangkau)
-    # ----------------------------------------------------------
     def bfs_dari_depot(self, depot: str) -> set:
-        """
-        BFS mulai dari sebuah depot — kembalikan set semua node
-        yang dapat dijangkau.
-        Big-O: O(V+E)
-        """
         if depot not in self._adj:
             return set()
-
         dikunjungi = set()
-        antrian    = [depot]           # queue sederhana (list)
+        antrian    = [depot]
         dikunjungi.add(depot)
-
         while antrian:
             saat_ini = antrian.pop(0)
             for (tetangga, _) in self._adj[saat_ini].semua():
                 if tetangga not in dikunjungi:
                     dikunjungi.add(tetangga)
                     antrian.append(tetangga)
-
         return dikunjungi
 
     def lokasi_tidak_terjangkau(self, depot: str) -> set:
-        """
-        Kembalikan set lokasi yang TIDAK bisa dijangkau dari depot.
-        """
-        terjangkau = self.bfs_dari_depot(depot)
-        return self._nodes - terjangkau
+        return self._nodes - self.bfs_dari_depot(depot)
 
-    # ----------------------------------------------------------
-    # DIJKSTRA (rute optimal)
-    # ----------------------------------------------------------
     def dijkstra(self, asal: str) -> tuple:
-        """
-        Cari jarak terpendek dari 'asal' ke semua node lain.
-        Kembalikan (jarak_dict, prev_dict).
-        Big-O: O(V^2) dengan implementasi list sederhana.
-        """
         INF   = float('inf')
-        jarak = {n: INF for n in self._nodes}
+        jarak = {n: INF  for n in self._nodes}
         prev  = {n: None for n in self._nodes}
-        jarak[asal] = 0
+        jarak[asal]      = 0
         belum_dikunjungi = set(self._nodes)
-
         while belum_dikunjungi:
-            # Ambil node dengan jarak terkecil (O(V))
             u = min(belum_dikunjungi, key=lambda n: jarak[n])
             if jarak[u] == INF:
                 break
             belum_dikunjungi.remove(u)
-
             for (v, bobot) in self._adj[u].semua():
-                alternatif = jarak[u] + bobot
-                if alternatif < jarak[v]:
-                    jarak[v] = alternatif
+                alt = jarak[u] + bobot
+                if alt < jarak[v]:
+                    jarak[v] = alt
                     prev[v]  = u
-
         return jarak, prev
 
     def rute_optimal(self, asal: str, tujuan: str) -> tuple:
-        """
-        Kembalikan (total_jarak, [path]) dari asal ke tujuan.
-        """
         jarak, prev = self.dijkstra(asal)
         path, cur   = [], tujuan
-
         while cur is not None:
             path.append(cur)
             cur = prev[cur]
-
         path.reverse()
-
         if path and path[0] == asal:
             return jarak[tujuan], path
         return float('inf'), []
 
-    # ----------------------------------------------------------
-    # UTILITAS
-    # ----------------------------------------------------------
     def jumlah_node(self) -> int:
         return len(self._nodes)
 
@@ -192,3 +122,78 @@ class Graph:
             print(f"  {kode}{label} -> {tetang}")
         print(f"Total node: {self.jumlah_node()}")
         print("===========================\n")
+
+
+# ============================================================
+#  DRIVER CODE — Jalankan langsung untuk melihat output
+# ============================================================
+if __name__ == "__main__":
+
+    print("╔══════════════════════════════════════════════╗")
+    print("║       SIMULASI GRAPH JARINGAN RUTE           ║")
+    print("╚══════════════════════════════════════════════╝")
+
+    # ── 1. INISIALISASI GRAF ────────────────────────────────
+    g = Graph()
+
+    for depot in ["DEPOT_0", "DEPOT_1", "DEPOT_2"]:
+        g.tambah_node(depot, adalah_depot=True)
+
+    rute_data = [
+        ("DEPOT_0", "LOK_001", 12),
+        ("DEPOT_0", "LOK_002",  8),
+        ("DEPOT_0", "LOK_003", 25),
+        ("DEPOT_1", "LOK_003",  5),
+        ("DEPOT_1", "LOK_004", 15),
+        ("DEPOT_2", "LOK_005", 20),
+        ("DEPOT_2", "LOK_006", 10),
+        ("LOK_001", "LOK_002",  6),
+        ("LOK_003", "LOK_005",  9),
+        ("LOK_004", "LOK_006",  7),
+    ]
+    for asal, tujuan, jarak in rute_data:
+        g.tambah_rute(asal, tujuan, jarak)
+
+    # ── 2. TAMPILKAN ADJACENCY LIST ─────────────────────────
+    g.tampilkan()
+
+    # ── 3. CEK TETANGGA ─────────────────────────────────────
+    print(">>> Tetangga DEPOT_0:")
+    for tujuan, jarak in g.tetangga("DEPOT_0"):
+        print(f"    -> {tujuan}  ({jarak} km)")
+
+    # ── 4. BFS DARI DEPOT ───────────────────────────────────
+    print("\n>>> BFS dari DEPOT_1 (semua lokasi terjangkau):")
+    terjangkau = g.bfs_dari_depot("DEPOT_1")
+    for lok in sorted(terjangkau):
+        print(f"    v {lok}")
+
+    # ── 5. LOKASI TIDAK TERJANGKAU ──────────────────────────
+    print("\n>>> Lokasi TIDAK terjangkau dari DEPOT_1:")
+    tidak = g.lokasi_tidak_terjangkau("DEPOT_1")
+    if tidak:
+        for lok in sorted(tidak):
+            print(f"    x {lok}")
+    else:
+        print("    Semua lokasi terjangkau.")
+
+    # ── 6. RUTE OPTIMAL (DIJKSTRA) ──────────────────────────
+    pasangan_rute = [
+        ("DEPOT_0", "LOK_005"),
+        ("DEPOT_1", "LOK_006"),
+        ("DEPOT_2", "LOK_001"),
+    ]
+    print("\n>>> Rute Optimal (Dijkstra):")
+    print(f"  {'ASAL':<12} {'TUJUAN':<12} {'JARAK':>8}   PATH")
+    print(f"  {'-'*12} {'-'*12} {'-'*8}   {'-'*30}")
+    for asal, tujuan in pasangan_rute:
+        jarak, path = g.rute_optimal(asal, tujuan)
+        jarak_str   = f"{jarak} km" if jarak != float('inf') else "tidak terjangkau"
+        path_str    = " -> ".join(path) if path else "-"
+        print(f"  {asal:<12} {tujuan:<12} {jarak_str:>8}   {path_str}")
+
+    # ── 7. STATISTIK GRAF ───────────────────────────────────
+    print(f"\n>>> Statistik Graf:")
+    print(f"    Total node  : {g.jumlah_node()}")
+    print(f"    Total depot : {len(g.depots)}  -> {g.depots}")
+    print(f"    Semua node  : {sorted(g.semua_node())}")
