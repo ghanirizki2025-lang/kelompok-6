@@ -1,121 +1,171 @@
-# =============================================================================
-# modul_5.py
-# Modul 5 — Dijkstra & Audit Jarak
-#
-# Tanggung jawab modul ini:
-#   - Menghitung rute terpendek dari depot ke lokasi tujuan (RUTE_OPTIMAL)
-#   - Mengaudit jarak semua lokasi dari depot tertentu (LAPORAN_BENCANA)
-#   - Mengurutkan hasil audit menggunakan Selection Sort pada Linked List
-#
-# Mata Kuliah : ELT60213 Algoritma dan Struktur Data
-# Topik       : 9 — Disaster Response Logistics System
-# =============================================================================
-
-from src.data_structures.graph import (
-    GraphRute,
-    dijkstra_logistik,
-    rekonstruksi_rute,
-    selection_sort_jarak,
-)
+class NodeLokasiJarak:
+    """Node Linked List untuk menyimpan data hasil audit jarak lokasi dari depot."""
+    def __init__(self, kode, jarak):
+        self.kode = kode        # Kode lokasi (misal: "L001")
+        self.jarak = jarak      # Jarak dari depot dalam km
+        self.next = None
 
 
-def tampilkan_rute_optimal(graph: GraphRute, depot: str, tujuan: str):
-    """
-    Hitung dan tampilkan rute terpendek dari depot ke tujuan menggunakan Dijkstra.
+class LinkedListAudit:
+    """Struktur data Linked List untuk menampung dan mengurutkan data audit jarak."""
+    def __init__(self):
+        self.head = None
 
-    Langkah:
-        1. Jalankan dijkstra_logistik dari depot.
-        2. Rekonstruksi jalur menggunakan parent map.
-        3. Tampilkan jalur + total jarak.
+    def append(self, kode, jarak):
+        """Menambahkan data audit lokasi baru ke akhir linked list."""
+        node_baru = NodeLokasiJarak(kode, jarak)
+        if not self.head:
+            self.head = node_baru
+            return
+        current = self.head
+        while current.next:
+            current = current.next
+        current.next = node_baru
 
-    Parameter:
-        graph  : objek GraphRute
-        depot  : kode node titik berangkat
-        tujuan : kode node tujuan pengiriman
-    """
-    # Validasi node ada di graph
-    if depot not in graph.adj:
-        print(f"  Depot '{depot}' tidak dikenal dalam jaringan.")
-        return
-    if tujuan not in graph.adj:
-        print(f"  Lokasi '{tujuan}' tidak dikenal dalam jaringan.")
-        return
+    def selection_sort(self):
+        """
+        Mengurutkan Linked List berdasarkan jarak terdekat (Ascending)
+        menggunakan algoritma Selection Sort sesuai spesifikasi Big-O: O(V^2).
+        """
+        if not self.head:
+            return
 
-    # Jalankan Dijkstra dari depot
-    dist, parent = dijkstra_logistik(graph, depot)
+        start = self.head
+        while start:
+            min_node = start
+            current = start.next
+            
+            # Cari node dengan jarak terkecil di sisa list
+            while current:
+                if current.jarak < min_node.jarak:
+                    min_node = current
+                current = current.next
+            
+            # Tukar data jika ditemukan jarak yang lebih kecil
+            if min_node != start:
+                start.kode, min_node.kode = min_node.kode, start.kode
+                start.jarak, min_node.jarak = min_node.jarak, start.jarak
+                
+            start = start.next
 
-    if dist[tujuan] == float('inf'):
-        print(f"  Tidak ada rute yang bisa dilalui dari {depot} ke {tujuan}.")
-        return
+    def tampilkan_audit(self):
+        """Mencetak daftar audit jarak yang telah diurutkan."""
+        current = self.head
+        no = 1
+        while current:
+            # Jika nilai jarak adalah infinity, berarti lokasi terisolasi
+            jarak_str = f"{current.jarak} km" if current.jarak != float('inf') else "TIDAK TERJANGKAU"
+            print(f"   {no}. {current.kode} -> Jarak: {jarak_str}")
+            current = current.next
+            no += 1
 
-    # Bangun urutan node jalur terpendek
-    jalur = rekonstruksi_rute(parent, depot, tujuan)
 
-    print(f"\n  RUTE OPTIMAL: {depot} → {tujuan}")
-    print(f"  {'─'*50}")
-    if jalur:
-        print(f"  Jalur  : {' → '.join(jalur)}")
-        print(f"  Panjang: {len(jalur) - 1} segmen")
+class ModuleDijkstra:
+    def __init__(self, graph_adjacency_list):
+        """
+        Menerima graph_adjacency_list dari Module 1 (Graph Jaringan Rute).
+        Format graph diharapkan: { "NODE_A": [("NODE_B", jarak_int), ...], ... }
+        """
+        self.graph = graph_adjacency_list
+
+    # 1. ALGORITMA DIJKSTRA
+    def cari_rute_optimal(self, start, target):
+        """
+        Mencari rute terpendek dari start ke target menggunakan algoritma Dijkstra.
+        Returns: tuple (jalur_list, total_jarak)
+        """
+        # Inisialisasi jarak ke semua node dengan tak hingga (infinity)
+        jarak = {node: float('inf') for node in self.graph}
+        jarak[start] = 0
+        
+        # Menyimpan rute pendahulu untuk rekonstruksi jalur
+        parent = {node: None for node in self.graph}
+        
+        # Daftar node yang belum dikunjungi (simulasi priority queue sederhana)
+        unvisited = list(self.graph.keys())
+
+        while unvisited:
+            # Cari node dengan jarak terkecil di daftar unvisited
+            current_node = min(unvisited, key=lambda node: jarak[node])
+            
+            # Jika jarak terkecil adalah tak hingga, sisa node tidak dapat dijangkau
+            if jarak[current_node] == float('inf'):
+                break
+                
+            unvisited.remove(current_node)
+
+            # Jika sudah mencapai target, hentikan pencarian lebih awal
+            if current_node == target:
+                break
+
+            # Evaluasi tetangga dari node saat ini
+            for tetangga, bobot in self.graph.get(current_node, []):
+                if tetangga in unvisited:
+                    jarak_baru = jarak[current_node] + bobot
+                    if jarak_baru < jarak[tetangga]:
+                        jarak[tetangga] = jarak_baru
+                        parent[tetangga] = current_node
+
+        # Rekonstruksi jalur dari target ke start
+        jalur = []
+        node_sekarang = target
+        while node_sekarang is not None:
+            jalur.insert(0, node_sekarang)
+            node_sekarang = parent[node_sekarang]
+
+        # Validasi apakah rute benar-benar ditemukan
+        if jarak[target] == float('inf'):
+            return [], float('inf')
+            
+        return jalur, jarak[target]
+
+    # 2. AUDIT JARAK (MENGGUNAKAN SELECTION SORT LINKED LIST)
+    def audit_seluruh_jarak(self, depot_asal):
+        """
+        Mengaudit dan mengurutkan seluruh lokasi berdasarkan jarak terdekat dari depot asal.
+        Mengidentifikasi lokasi yang paling sulit dijangkau.
+        """
+        list_audit = LinkedListAudit()
+        
+        # Hitung jarak dari depot ke setiap node di dalam graph menggunakan Dijkstra
+        for node in self.graph.keys():
+            if node != depot_asal:
+                _, total_jarak = self.cari_rute_optimal(depot_asal, node)
+                list_audit.append(node, total_jarak)
+        
+        # Urutkan menggunakan Selection Sort berbasis Linked List (O(V^2))
+        list_audit.selection_sort()
+        return list_audit
+
+
+# ==============================================================================
+# PENGUJIAN MANDIRI MODULE DIJKSTRA & AUDIT JARAK
+# ==============================================================================
+if __name__ == "__main__":
+    print("=== TESTING MODULE DIJKSTRA & AUDIT JARAK ===")
+    
+    # Mock data graph adjacency list dari Module 1 Graph (35 lokasi + 3 depot)
+    # Diperkecil untuk contoh pengujian fungsionalitas
+    mock_graph = {
+        "DEPOT_0": [("L001", 5), ("L002", 12)],
+        "L001": [("DEPOT_0", 5), ("L003", 7)],
+        "L002": [("DEPOT_0", 12)],
+        "L003": [("L001", 7)],
+        "L004": []  # Lokasi terisolasi / tidak memiliki edge
+    }
+
+    dijkstra_sys = ModuleDijkstra(mock_graph)
+
+    # 1. Test Rute Terpendek (Perintah: RUTE OPTIMAL DEPOT_0 L003)
+    print("\n📍 Menghitung Rute Optimal dari DEPOT_0 ke L003...")
+    jalur, jarak = dijkstra_sys.cari_rute_optimal("DEPOT_0", "L003")
+    if jarak != float('inf'):
+        print(f"✔️ Rute Terpendek : {' -> '.join(jalur)}")
+        print(f"📏 Total Jarak    : {jarak} km")
     else:
-        print(f"  Jalur  : Tidak dapat direkonstruksi")
-    print(f"  Jarak  : {dist[tujuan]} km")
-    print(f"  {'─'*50}\n")
+        print("❌ Rute tidak ditemukan atau lokasi terisolasi!")
 
-
-def audit_jarak_depot(graph: GraphRute, depot: str, hanya_lokasi: bool = True) -> list:
-    """
-    Hitung jarak terpendek dari depot ke semua node, lalu urutkan
-    menggunakan Selection Sort (tanpa sort bawaan Python).
-
-    Parameter:
-        graph        : objek GraphRute
-        depot        : kode depot yang dijadikan titik referensi
-        hanya_lokasi : jika True, depot lain tidak dimasukkan ke hasil
-
-    Return:
-        list tuple (kode, jarak) terurut ascending.
-    """
-    if depot not in graph.adj:
-        return []
-
-    dist, _ = dijkstra_logistik(graph, depot)
-
-    # Kumpulkan pasangan (kode, jarak) untuk lokasi yang terjangkau
-    pasangan = []
-    for kode, jarak in dist.items():
-        if jarak == float('inf'):
-            continue   # lokasi tidak terjangkau, lewati
-        if hanya_lokasi and 'DEPOT' in kode:
-            continue   # skip depot lain jika tidak diperlukan
-        pasangan.append((kode, jarak))
-
-    # Urutkan dengan Selection Sort (implementasi manual di graph.py)
-    pasangan = selection_sort_jarak(pasangan)
-    return pasangan
-
-
-def tampilkan_audit_jarak(graph: GraphRute, depot: str, top_n: int = 10):
-    """
-    Tampilkan tabel audit jarak dari depot, diurutkan dari yang terdekat.
-    Digunakan dalam LAPORAN_BENCANA.
-
-    Parameter:
-        graph  : objek GraphRute
-        depot  : kode depot referensi
-        top_n  : jumlah baris yang ditampilkan (default 10)
-    """
-    hasil = audit_jarak_depot(graph, depot)
-
-    print(f"\n  AUDIT JARAK dari {depot} (Selection Sort)")
-    print(f"  {'─'*38}")
-    print(f"  {'Rank':<6} {'Lokasi':<12} {'Jarak (km)':>12}")
-    print(f"  {'─'*38}")
-
-    for i, (kode, jarak) in enumerate(hasil[:top_n], 1):
-        print(f"  {i:<6} {kode:<12} {jarak:>12} km")
-
-    if len(hasil) > top_n:
-        print(f"  ... dan {len(hasil) - top_n} lokasi lainnya")
-
-    print(f"  {'─'*38}")
-    print(f"  Total lokasi terjangkau: {len(hasil)}\n")
+    # 2. Test Audit Jarak (Mengurutkan lokasi terdekat -> tersulit dijangkau)
+    print("\n📊 Menjalankan Audit Jarak dari DEPOT_0 (Selection Sort Linked List):")
+    hasil_audit = dijkstra_sys.audit_seluruh_jarak("DEPOT_0")
+    hasil_audit.tampilkan_audit()
