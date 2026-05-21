@@ -1,194 +1,310 @@
 # ============================================================
-#  MODULE 1 : GRAPH JARINGAN RUTE
-#  Graf berbobot tidak berarah menggunakan Adjacency List
-#  berbasis Linked List.
-#  Big-O: add O(1), BFS O(V+E)
+#  PURE DATA STRUCTURE : GRAPH
+#  Graf Berbobot Tidak Berarah
+#  Menggunakan Adjacency List berbasis Linked List murni
 # ============================================================
 
 
-class GNode:
-    """Simpul dalam adjacency list (merepresentasikan satu tetangga)."""
-    def __init__(self, tujuan: str, jarak: float):
-        self.tujuan = tujuan    # kode lokasi tujuan
-        self.jarak  = jarak     # bobot edge (km)
+# ── NODE LINKED LIST (untuk adjacency list) ────────────────
+class EdgeNode:
+    """Satu edge dalam adjacency list."""
+    def __init__(self, vertex: str, bobot: float = 1.0):
+        self.vertex = vertex
+        self.bobot  = bobot
         self.next   = None
 
 
-class AdjList:
-    """Linked list untuk menyimpan daftar tetangga satu node."""
+class EdgeList:
+    """Linked List untuk menyimpan daftar edge dari satu vertex."""
     def __init__(self):
         self.head  = None
         self._size = 0
 
-    def tambah(self, tujuan: str, jarak: float):
-        node = GNode(tujuan, jarak)
+    def tambah(self, vertex: str, bobot: float = 1.0):
+        node       = EdgeNode(vertex, bobot)
         node.next  = self.head
         self.head  = node
         self._size += 1
 
+    def hapus(self, vertex: str) -> bool:
+        if self.head is None:
+            return False
+        if self.head.vertex == vertex:
+            self.head  = self.head.next
+            self._size -= 1
+            return True
+        cur = self.head
+        while cur.next:
+            if cur.next.vertex == vertex:
+                cur.next   = cur.next.next
+                self._size -= 1
+                return True
+            cur = cur.next
+        return False
+
+    def ada(self, vertex: str) -> bool:
+        cur = self.head
+        while cur:
+            if cur.vertex == vertex:
+                return True
+            cur = cur.next
+        return False
+
     def semua(self) -> list:
-        """Kembalikan list of (tujuan, jarak)."""
         hasil, cur = [], self.head
         while cur:
-            hasil.append((cur.tujuan, cur.jarak))
+            hasil.append((cur.vertex, cur.bobot))
             cur = cur.next
         return hasil
 
     def __len__(self):
         return self._size
 
+    def __repr__(self):
+        bagian = [f"{v}({b})" for v, b in self.semua()]
+        return " -> ".join(bagian) + " -> NULL"
 
+
+# ── GRAPH UTAMA ────────────────────────────────────────────
 class Graph:
     """
-    Graf berbobot tidak berarah untuk jaringan rute logistik.
+    Graf Berbobot Tidak Berarah (Undirected Weighted Graph).
 
-    Atribut:
-        _adj   : dict {kode_lokasi -> AdjList}
-        _nodes : set semua kode lokasi
-        depots : list kode depot (DEPOT_0, DEPOT_1, DEPOT_2)
+    Representasi : Adjacency List (dict of EdgeList)
+    Tipe Graf    : Tidak berarah — setiap edge disimpan 2 arah
+
+    Operasi              Big-O
+    ─────────────────────────────────
+    tambah_vertex        O(1)
+    hapus_vertex         O(V + E)
+    tambah_edge          O(1)
+    hapus_edge           O(degree)
+    ada_edge             O(degree)
+    tetangga             O(degree)
+    bfs                  O(V + E)
+    dfs                  O(V + E)
+    dijkstra             O(V²)      ← list-based
+    ada_siklus           O(V + E)
+    terhubung            O(V + E)
+    komponen_terhubung   O(V + E)
     """
 
-    def __init__(self):
-        self._adj   = {}          # adjacency list
-        self._nodes = set()       # semua node
-        self.depots = []          # daftar depot terdaftar
+    def __init__(self, berarah: bool = False):
+        self._adj     = {}         # {vertex -> EdgeList}
+        self._berarah = berarah    # False = undirected
 
-    # ----------------------------------------------------------
-    # MANAJEMEN NODE
-    # ----------------------------------------------------------
-    def tambah_node(self, kode: str, adalah_depot: bool = False):
-        """
-        Daftarkan lokasi baru ke dalam graf.
-        Jika adalah_depot=True, kode juga masuk ke self.depots.
-        Big-O: O(1)
-        """
-        if kode not in self._adj:
-            self._adj[kode]  = AdjList()
-            self._nodes.add(kode)
-        if adalah_depot and kode not in self.depots:
-            self.depots.append(kode)
+    # ── VERTEX ──────────────────────────────────────────────
+    def tambah_vertex(self, v: str):
+        """Tambah vertex baru. Abaikan jika sudah ada. O(1)"""
+        if v not in self._adj:
+            self._adj[v] = EdgeList()
 
-    # ----------------------------------------------------------
-    # MANAJEMEN RUTE (EDGE)
-    # ----------------------------------------------------------
-    def tambah_rute(self, asal: str, tujuan: str, jarak: float):
+    def hapus_vertex(self, v: str) -> bool:
         """
-        Tambahkan edge dua arah antara asal dan tujuan.
-        Node yang belum ada akan dibuat otomatis.
-        Big-O: O(1)
+        Hapus vertex beserta semua edge yang terhubung dengannya.
+        O(V + E)
         """
-        for k in (asal, tujuan):
-            if k not in self._adj:
-                self.tambah_node(k)
+        if v not in self._adj:
+            return False
+        del self._adj[v]
+        # Hapus semua edge yang menuju v dari vertex lain
+        for u in self._adj:
+            self._adj[u].hapus(v)
+        return True
 
-        self._adj[asal].tambah(tujuan, jarak)
-        self._adj[tujuan].tambah(asal, jarak)
+    def semua_vertex(self) -> list:
+        return list(self._adj.keys())
 
-    # ----------------------------------------------------------
-    # TETANGGA
-    # ----------------------------------------------------------
-    def tetangga(self, kode: str) -> list:
+    def jumlah_vertex(self) -> int:
+        return len(self._adj)
+
+    # ── EDGE ────────────────────────────────────────────────
+    def tambah_edge(self, u: str, v: str, bobot: float = 1.0):
         """
-        Kembalikan list of (tujuan, jarak) tetangga sebuah node.
-        Big-O: O(degree(v))
+        Tambah edge antara u dan v (dua arah jika undirected).
+        Vertex yang belum ada dibuat otomatis. O(1)
         """
-        if kode not in self._adj:
+        for vertex in (u, v):
+            self.tambah_vertex(vertex)
+
+        self._adj[u].tambah(v, bobot)
+        if not self._berarah:
+            self._adj[v].tambah(u, bobot)
+
+    def hapus_edge(self, u: str, v: str) -> bool:
+        """Hapus edge u–v. O(degree)"""
+        if u not in self._adj or v not in self._adj:
+            return False
+        ok = self._adj[u].hapus(v)
+        if not self._berarah:
+            self._adj[v].hapus(u)
+        return ok
+
+    def ada_edge(self, u: str, v: str) -> bool:
+        """Cek apakah edge u–v ada. O(degree)"""
+        if u not in self._adj:
+            return False
+        return self._adj[u].ada(v)
+
+    def tetangga(self, v: str) -> list:
+        """Kembalikan list (vertex, bobot) tetangga v. O(degree)"""
+        if v not in self._adj:
             return []
-        return self._adj[kode].semua()
+        return self._adj[v].semua()
 
-    # ----------------------------------------------------------
-    # BFS DARI DEPOT (deteksi lokasi terjangkau)
-    # ----------------------------------------------------------
-    def bfs_dari_depot(self, depot: str) -> set:
+    def jumlah_edge(self) -> int:
+        total = sum(len(self._adj[v]) for v in self._adj)
+        return total if self._berarah else total // 2
+
+    # ── BFS ─────────────────────────────────────────────────
+    def bfs(self, start: str) -> list:
         """
-        BFS mulai dari sebuah depot — kembalikan set semua node
-        yang dapat dijangkau.
-        Big-O: O(V+E)
+        Breadth-First Search dari 'start'.
+        Kembalikan urutan vertex yang dikunjungi. O(V+E)
         """
-        if depot not in self._adj:
-            return set()
+        if start not in self._adj:
+            return []
 
         dikunjungi = set()
-        antrian    = [depot]           # queue sederhana (list)
-        dikunjungi.add(depot)
+        urutan     = []
+        antrian    = [start]
+        dikunjungi.add(start)
 
         while antrian:
-            saat_ini = antrian.pop(0)
-            for (tetangga, _) in self._adj[saat_ini].semua():
+            v = antrian.pop(0)
+            urutan.append(v)
+            for (tetangga, _) in self._adj[v].semua():
                 if tetangga not in dikunjungi:
                     dikunjungi.add(tetangga)
                     antrian.append(tetangga)
 
-        return dikunjungi
+        return urutan
 
-    def lokasi_tidak_terjangkau(self, depot: str) -> set:
+    # ── DFS ─────────────────────────────────────────────────
+    def dfs(self, start: str) -> list:
         """
-        Kembalikan set lokasi yang TIDAK bisa dijangkau dari depot.
+        Depth-First Search dari 'start' (iteratif dengan stack).
+        Kembalikan urutan vertex yang dikunjungi. O(V+E)
         """
-        terjangkau = self.bfs_dari_depot(depot)
-        return self._nodes - terjangkau
+        if start not in self._adj:
+            return []
 
-    # ----------------------------------------------------------
-    # DIJKSTRA (rute optimal)
-    # ----------------------------------------------------------
-    def dijkstra(self, asal: str) -> tuple:
-        """
-        Cari jarak terpendek dari 'asal' ke semua node lain.
-        Kembalikan (jarak_dict, prev_dict).
-        Big-O: O(V^2) dengan implementasi list sederhana.
-        """
-        INF   = float('inf')
-        jarak = {n: INF for n in self._nodes}
-        prev  = {n: None for n in self._nodes}
-        jarak[asal] = 0
-        belum_dikunjungi = set(self._nodes)
+        dikunjungi = set()
+        urutan     = []
+        stack      = [start]
 
-        while belum_dikunjungi:
-            # Ambil node dengan jarak terkecil (O(V))
-            u = min(belum_dikunjungi, key=lambda n: jarak[n])
+        while stack:
+            v = stack.pop()
+            if v not in dikunjungi:
+                dikunjungi.add(v)
+                urutan.append(v)
+                for (tetangga, _) in self._adj[v].semua():
+                    if tetangga not in dikunjungi:
+                        stack.append(tetangga)
+
+        return urutan
+
+    # ── DIJKSTRA ────────────────────────────────────────────
+    def dijkstra(self, sumber: str) -> tuple:
+        """
+        Algoritma Dijkstra — jarak terpendek dari sumber ke semua vertex.
+        Kembalikan (jarak_dict, prev_dict). O(V²) dengan list sederhana.
+        """
+        INF    = float('inf')
+        jarak  = {v: INF  for v in self._adj}
+        prev   = {v: None for v in self._adj}
+        jarak[sumber] = 0
+        belum  = set(self._adj.keys())
+
+        while belum:
+            u = min(belum, key=lambda x: jarak[x])
             if jarak[u] == INF:
                 break
-            belum_dikunjungi.remove(u)
-
-            for (v, bobot) in self._adj[u].semua():
-                alternatif = jarak[u] + bobot
-                if alternatif < jarak[v]:
-                    jarak[v] = alternatif
+            belum.remove(u)
+            for (v, w) in self._adj[u].semua():
+                alt = jarak[u] + w
+                if alt < jarak[v]:
+                    jarak[v] = alt
                     prev[v]  = u
 
         return jarak, prev
 
-    def rute_optimal(self, asal: str, tujuan: str) -> tuple:
+    def jalur_terpendek(self, sumber: str, tujuan: str) -> tuple:
         """
-        Kembalikan (total_jarak, [path]) dari asal ke tujuan.
+        Rekonstruksi jalur terpendek dari sumber ke tujuan.
+        Kembalikan (total_bobot, [path]).
         """
-        jarak, prev = self.dijkstra(asal)
+        jarak, prev = self.dijkstra(sumber)
         path, cur   = [], tujuan
 
         while cur is not None:
             path.append(cur)
             cur = prev[cur]
-
         path.reverse()
 
-        if path and path[0] == asal:
+        if path and path[0] == sumber:
             return jarak[tujuan], path
         return float('inf'), []
 
-    # ----------------------------------------------------------
-    # UTILITAS
-    # ----------------------------------------------------------
-    def jumlah_node(self) -> int:
-        return len(self._nodes)
+    # ── CEK SIKLUS ──────────────────────────────────────────
+    def ada_siklus(self) -> bool:
+        """
+        Deteksi siklus menggunakan DFS + parent tracking.
+        O(V+E). Hanya akurat untuk graf tidak berarah.
+        """
+        dikunjungi = set()
 
-    def semua_node(self) -> set:
-        return set(self._nodes)
+        def dfs_siklus(v, parent):
+            dikunjungi.add(v)
+            for (tetangga, _) in self._adj[v].semua():
+                if tetangga not in dikunjungi:
+                    if dfs_siklus(tetangga, v):
+                        return True
+                elif tetangga != parent:
+                    return True
+            return False
+
+        for v in self._adj:
+            if v not in dikunjungi:
+                if dfs_siklus(v, None):
+                    return True
+        return False
+
+    # ── KONEKTIVITAS ────────────────────────────────────────
+    def terhubung(self) -> bool:
+        """Cek apakah seluruh graf terhubung. O(V+E)"""
+        if not self._adj:
+            return True
+        start  = next(iter(self._adj))
+        return len(self.bfs(start)) == len(self._adj)
+
+    def komponen_terhubung(self) -> list:
+        """
+        Kembalikan list of list — setiap sub-list adalah
+        satu komponen terhubung. O(V+E)
+        """
+        dikunjungi = set()
+        komponen   = []
+        for v in self._adj:
+            if v not in dikunjungi:
+                komp = self.bfs(v)
+                dikunjungi.update(komp)
+                komponen.append(komp)
+        return komponen
+
+    # ── UTILITAS ────────────────────────────────────────────
+    def derajat(self, v: str) -> int:
+        """Kembalikan jumlah edge yang terhubung ke v."""
+        if v not in self._adj:
+            return 0
+        return len(self._adj[v])
 
     def tampilkan(self):
-        print("\n=== ADJACENCY LIST GRAF ===")
-        for kode in sorted(self._adj):
-            label  = " [DEPOT]" if kode in self.depots else ""
-            tetang = self._adj[kode].semua()
-            print(f"  {kode}{label} -> {tetang}")
-        print(f"Total node: {self.jumlah_node()}")
-        print("===========================\n")
+        tipe = "Berarah" if self._berarah else "Tidak Berarah"
+        print(f"\n{'='*50}")
+        print(f"  GRAPH ({tipe})")
+        print(f"  Vertex: {self.jumlah_vertex()}  |  Edge: {self.jumlah_edge()}")
+        print(f"{'='*50}")
+        for v in sorted(self._adj):
+            print(f"  {v:10} -> {self._adj[v]}")
+        print(f"{'='*50}\n")
