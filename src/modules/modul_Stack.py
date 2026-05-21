@@ -1,160 +1,102 @@
-# test_Stack.py (Standalone Unit Test - Stack Log Pengiriman)
+class NodeStack:
+    """Node untuk menyimpan data transaksi logistik di dalam Linked List Stack."""
+    def __init__(self, data_log):
+        self.data_log = data_log  # Menyimpan dictionary data pengiriman
+        self.next = None          # Pointer ke node di bawahnya
 
-# ── STACK IMPLEMENTATION ──────────────────────────────────────
-class _StackNode:
-    def __init__(self, data):
-        self.data = data
-        self.next = None
 
-class Stack:
+class StackLogPengiriman:
+    """Struktur data Stack (LIFO) untuk mencatat riwayat dan pembatalan logistik."""
     def __init__(self):
-        self.top = None
-        self._size = 0
-
-    def push(self, data):
-        node = _StackNode(data)
-        node.next = self.top
-        self.top = node
-        self._size += 1
-
-    def push_many(self, items):
-        """Helper untuk memasukkan banyak item sekaligus dari sebuah list."""
-        for item in items:
-            self.push(item)
-
-    def pop(self):
-        if self.top is None:
-            return None
-        data = self.top.data
-        self.top = self.top.next
-        self._size -= 1
-        return data
-
-    def peek(self):
-        return self.top.data if self.top else None
-
-    def to_list(self):
-        hasil, curr = [], self.top
-        while curr:
-            hasil.append(curr.data)
-            curr = curr.next
-        return hasil
+        self.top = None           # Pointer ke elemen teratas stack
+        self._ukuran = 0          # Menghitung jumlah log tersimpan
 
     def is_empty(self):
-        return self._size == 0
+        """Memeriksa apakah stack dalam kondisi kosong."""
+        return self.top is None
 
-    def __len__(self):
-        return self._size
+    # 1. OPERASI: PUSH (Mencatat transaksi logistik baru - O(1))
+    def push(self, depot, lokasi, jenis, jumlah):
+        """
+        Memasukkan log pengiriman bantuan baru ke bagian atas stack.
+        Mendukung Big-O: push O(1).
+        """
+        data_log = {
+            "depot": depot,
+            "lokasi": lokasi,
+            "jenis": jenis,
+            "jumlah": jumlah
+        }
+        node_baru = NodeStack(data_log)
+        
+        # Kaitkan node baru ke top yang lama, lalu geser top ke node baru
+        node_baru.next = self.top
+        self.top = node_baru
+        self._ukuran += 1
+        return True
 
+    # 2. OPERASI: POP / ROLLBACK (Membatalkan pengiriman terakhir - O(1))
+    def pop(self):
+        """
+        Mengambil dan menghapus log pengiriman teratas (terbaru).
+        Mendukung Big-O: pop O(1).
+        Returns: dictionary data log jika ada, None jika stack kosong.
+        """
+        if self.is_empty():
+            return None
+        
+        node_diambil = self.top
+        self.top = self.top.next  # Geser top ke elemen di bawahnya
+        self._ukuran -= 1
+        
+        return node_diambil.data_log
 
-# ── DUMMY DATA FOR LOGISTIK ───────────────────────────────────
-class _Item:
-    def __init__(self, id_, jenis, jumlah, asal, tujuan, prioritas=2):
-        self.bantuan_id = id_
-        self.jenis      = jenis
-        self.jumlah     = jumlah
-        self.asal       = asal
-        self.tujuan     = tujuan
-        self.prioritas  = prioritas
+    # 3. OPERASI: LOG_PENGIRIMAN (Menampilkan riwayat Terbaru -> Lama)
+    def tampilkan_log(self):
+        """
+        Menampilkan seluruh riwayat pengiriman dari yang paling baru ke terlama.
+        Sesuai spesifikasi perintah LOG_PENGIRIMAN.
+        """
+        if self.is_empty():
+            print("📋 Riwayat log pengiriman kosong.")
+            return
 
-def create_dummy_item(id_=1):
-    """Factory function untuk membuat object item logistik."""
-    return _Item(id_, "MAKANAN", 10, "DEPOT_0", f"L00{id_}")
-
-
-# ── PERFECTED TEST CASES ──────────────────────────────────────
-def test_tc01():
-    s = Stack()
-    s.push(create_dummy_item(1))
-    assert s.peek() is not None, "Peek mengembalikan None padahal stack terisi"
-    print("  [TC-01 PASS] push + peek sukses")
-
-def test_tc02():
-    s = Stack()
-    b1, b2, b3 = create_dummy_item(1), create_dummy_item(2), create_dummy_item(3)
-    s.push(b1); s.push(b2); s.push(b3)
-    
-    assert s.pop() is b3, "Gagal: Elemen terakhir masuk (b3) harus keluar pertama"
-    assert s.pop() is b2, "Gagal: Elemen kedua (b2) tidak berurutan"
-    assert s.pop() is b1, "Gagal: Elemen pertama masuk (b1) harus keluar terakhir"
-    print("  [TC-02 PASS] Urutan LIFO (Last In, First Out) akurat")
-
-def test_tc03():
-    s = Stack()
-    assert s.pop() is None, "Pop pada stack kosong seharusnya mengembalikan None"
-    print("  [TC-03 PASS] Pop stack kosong aman (mengembalikan None)")
-
-def test_tc04():
-    s = Stack()
-    s.push(create_dummy_item(1))
-    s.push(create_dummy_item(2))
-    p1 = s.peek()
-    p2 = s.peek()
-    assert p1 is p2, "Mengakses peek berkali-kali mengubah hasil objek"
-    assert len(s) == 2, "Fungsi peek secara tidak sengaja mengubah ukuran stack"
-    print("  [TC-04 PASS] Peek bersifat non-destructive (tidak mengubah stack)")
-
-def test_tc05():
-    s = Stack()
-    b1, b2, b3 = create_dummy_item(1), create_dummy_item(2), create_dummy_item(3)
-    s.push(b1); s.push(b2); s.push(b3)
-    lst = s.to_list()
-    
-    assert len(lst) == 3, "Ukuran list hasil konversi tidak sesuai"
-    assert lst[0] is b3, "Elemen pertama di list harus berupa Top Stack (b3)"
-    assert lst[-1] is b1, "Elemen terakhir di list harus berupa Bottom Stack (b1)"
-    print("  [TC-05 PASS] Konversi ke list mempertahankan urutan top ke bottom")
-
-def test_tc06():
-    s = Stack()
-    assert s.is_empty() is True, "Status awal stack harusnya kosong (True)"
-    s.push(create_dummy_item())
-    assert s.is_empty() is False, "Stack terisi tapi is_empty() mengembalikan True"
-    s.pop()
-    assert s.is_empty() is True, "Stack dikosongkan tapi is_empty() mengembalikan False"
-    print("  [TC-06 PASS] Method is_empty mendeteksi kekosongan dengan akurat")
-
-def test_tc07():
-    s = Stack()
-    for i in range(5): 
-        s.push(create_dummy_item(i))
-    assert len(s) == 5, f"Ekspektasi ukuran 5, tapi terbaca {len(s)}"
-    s.pop(); s.pop()
-    assert len(s) == 3, f"Ekspektasi ukuran 3 setelah 2x pop, tapi terbaca {len(s)}"
-    print("  [TC-07 PASS] Penghitungan dunder len(stack) akurat")
-
-def test_tc08():
-    s = Stack()
-    # Mengetes ketahanan stack dengan data yang lebih banyak (Stress Test skala kecil)
-    for i in range(50): 
-        s.push(create_dummy_item(i))
-    for _ in range(50): 
-        s.pop()
-    assert s.is_empty() and len(s) == 0, "Stack gagal kembali bersih setelah push-pop seimbang"
-    print("  [TC-08 PASS] Operasi massal (Push/Pop berulang) kembali bersih total")
+        print("📋 RIWAYAT LOG PENGIRIMAN (Terbaru -> Lama):")
+        current = self.top
+        no = 1
+        while current is not None:
+            log = current.data_log
+            print(f"   {no}. {log['jumlah']} {log['jenis']} ke {log['lokasi']} (Asal: {log['depot']})")
+            current = current.next
+            no += 1
 
 
-# ── RUNNER ────────────────────────────────────────────────────
+# ==============================================================================
+# CONTOH PENGGUNAAN & PENGUJIAN MODULE STACK
+# ==============================================================================
 if __name__ == "__main__":
-    tests = [test_tc01, test_tc02, test_tc03, test_tc04,
-             test_tc05, test_tc06, test_tc07, test_tc08]
+    print("=== DEMO TESTING STACK LOG PENGIRIMAN ===")
+    stack_logistik = StackLogPengiriman()
 
-    print("\n" + "="*55)
-    print("   AUTOMATED UNIT TEST – Stack Log Pengiriman")
-    print("="*55)
+    # 1. Simulasi mencatat beberapa pengiriman (PUSH)
+    print("\n🚀 Menambahkan log pengiriman logistik...")
+    stack_logistik.push(depot="DEPOT_0", lokasi="L002", jenis="Beras", jumlah="500 kg")
+    stack_logistik.push(depot="DEPOT_1", lokasi="L001", jenis="Tenda", jumlah="50 unit")
+    stack_logistik.push(depot="DEPOT_0", lokasi="L004", jenis="Obat-obatan", jumlah="200 paket")
 
-    lulus = gagal = 0
-    for fn in tests:
-        try:
-            fn()
-            lulus += 1
-        except AssertionError as e:
-            print(f"  [GAGAL] {fn.__name__}: {e}")
-            gagal += 1
-        except Exception as general_error:
-            print(f"  [CRASH] {fn.__name__} Mengalami error sistem: {general_error}")
-            gagal += 1
+    # 2. Menampilkan riwayat (LOG_PENGIRIMAN)
+    # Harus tercetak urutan terbalik dari input (L004 -> L001 -> L002)
+    stack_logistik.tampilkan_log()
 
-    print("─"*55)
-    print(f"  HASIL AKHIR: {lulus} LULUS | {gagal} GAGAL dari {len(tests)} Test Cases")
-    print("="*55)
+    # 3. Simulasi Fitur Rollback Pengiriman Terakhir (POP)
+    print("\n⏪ Melakukan ROLLBACK pengiriman terakhir...")
+    log_batal = stack_logistik.pop()
+    if log_batal:
+        print(f"[ROLLBACK BERHASIL] Pengiriman terakhir dibatalkan!")
+        print(f"   Stok sebanyak {log_batal['jumlah']} {log_batal['jenis']} dikembalikan ke {log_batal['depot']}.")
+    else:
+        print("❌ Gagal Rollback: Tidak ada riwayat transaksi pengiriman yang bisa dibatalkan.")
+
+    # 4. Menampilkan kembali riwayat setelah rollback
+    print("\n📊 Kondisi log setelah dilakukan rollback:")
+    stack_logistik.tampilkan_log()
