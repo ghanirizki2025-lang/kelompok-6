@@ -1,22 +1,3 @@
-# =============================================================================
-# bst.py
-# Implementasi Binary Search Tree (BST) untuk Registry Lokasi Bencana.
-#
-# Setiap node menyimpan satu objek Lokasi. Kunci pencarian adalah lokasi.kode
-# (string), misalnya 'L001', 'DEPOT_0', dsb.
-#
-# Operasi:
-#   insert       — tambah lokasi baru, O(log n) rata-rata
-#   search       — cari lokasi by kode, O(log n)
-#   update_level — perbarui level bencana, O(log n)
-#   inorder      — daftar semua lokasi terurut by kode, O(n)
-#
-# Catatan BST tidak self-balancing — worst case O(n) jika data masuk terurut.
-#
-# Mata Kuliah : ELT60213 Algoritma dan Struktur Data
-# Topik       : 9 — Disaster Response Logistics System
-# =============================================================================
-
 from typing import Optional, List
 
 
@@ -49,9 +30,6 @@ class BSTLokasi:
     def __init__(self):
         self.root = None   # akar pohon, awalnya kosong
 
-    # ------------------------------------------------------------------
-    # INSERT
-    # ------------------------------------------------------------------
     def insert(self, lokasi):
         """
         Masukkan lokasi baru ke BST.
@@ -84,9 +62,6 @@ class BSTLokasi:
 
         # lokasi.kode == node.lokasi.kode → duplikat, abaikan
 
-    # ------------------------------------------------------------------
-    # SEARCH
-    # ------------------------------------------------------------------
     def search(self, kode: str) -> Optional[object]:
         """
         Cari dan kembalikan objek Lokasi berdasarkan kode.
@@ -116,10 +91,7 @@ class BSTLokasi:
         else:
             # Kode yang dicari lebih besar → pergi ke kanan
             return self._search_rekursif(node.right, kode)
-        
-    # ------------------------------------------------------------------
-    # UPDATE LEVEL
-    # ------------------------------------------------------------------
+
     def update_level(self, kode: str, level: int) -> bool:
         """
         Perbarui level bencana lokasi yang memiliki kode tertentu.
@@ -137,10 +109,7 @@ class BSTLokasi:
             lok.level = level   # langsung ubah karena objek adalah referensi
             return True
         return False
-    
-    # ------------------------------------------------------------------
-    # INORDER TRAVERSAL
-    # ------------------------------------------------------------------
+
     def inorder(self) -> List:
         """
         Kembalikan semua lokasi dalam urutan terurut by kode (ascending).
@@ -162,9 +131,6 @@ class BSTLokasi:
         hasil.append(node.lokasi)                    # simpan akar
         self._inorder_rekursif(node.right, hasil)   # kunjungi kanan
 
-    # ------------------------------------------------------------------
-    # UTILITAS
-    # ------------------------------------------------------------------
     def jumlah_node(self) -> int:
         """Hitung total node dalam BST. Big-O: O(n)."""
         return self._hitung_rekursif(self.root)
