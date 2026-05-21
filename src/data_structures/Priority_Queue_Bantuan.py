@@ -1,6 +1,4 @@
 
-
-
 class PriorityQueueBantuan:
     """
     Antrian berprioritas untuk pengiriman bantuan bencana.
