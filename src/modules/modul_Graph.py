@@ -1,192 +1,120 @@
+import unittest
 
-class GNode:
-    """Simpul dalam adjacency list (merepresentasikan satu tetangga)."""
-    def __init__(self, tujuan: str, jarak: float):
-        self.tujuan = tujuan
-        self.jarak  = jarak
-        self.next   = None
+class LLNode:
+    def __init__(self, data=None):
+        self.data = data
+        self.next = None
 
-
-class AdjList:
-    """Linked list untuk menyimpan daftar tetangga satu node."""
+class LinkedList:
     def __init__(self):
-        self.head  = None
+        self.head = None
         self._size = 0
 
-    def tambah(self, tujuan: str, jarak: float):
-        node      = GNode(tujuan, jarak)
-        node.next = self.head
-        self.head = node
+    def prepend(self, data):
+        node_baru = LLNode(data)
+        node_baru.next = self.head
+        self.head = node_baru
         self._size += 1
 
-    def semua(self) -> list:
-        hasil, cur = [], self.head
-        while cur:
-            hasil.append((cur.tujuan, cur.jarak))
-            cur = cur.next
-        return hasil
+    def kosong(self) -> bool:
+        return self.head is None
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._size
 
+class GraphNodeData:
+    def __init__(self, tujuan, bobot):
+        self.tujuan = tujuan
+        self.bobot = bobot
 
-class Graph:
+class GraphJaringanRute:
     def __init__(self):
-        self._adj   = {}
-        self._nodes = set()
-        self.depots = []
+        self.adj_list = {}
 
-    def tambah_node(self, kode: str, adalah_depot: bool = False):
-        if kode not in self._adj:
-            self._adj[kode]  = AdjList()
-            self._nodes.add(kode)
-        if adalah_depot and kode not in self.depots:
-            self.depots.append(kode)
+    def tambah_node(self, kode_lokasi):
+        if kode_lokasi not in self.adj_list:
+            self.adj_list[kode_lokasi] = LinkedList()
 
-    def tambah_rute(self, asal: str, tujuan: str, jarak: float):
-        for k in (asal, tujuan):
-            if k not in self._adj:
-                self.tambah_node(k)
-        self._adj[asal].tambah(tujuan, jarak)
-        self._adj[tujuan].tambah(asal, jarak)
+    def tambah_rute(self, asal, tujuan, bobot):
+        self.tambah_node(asal)
+        self.tambah_node(tujuan)
+        self.adj_list[asal].prepend(GraphNodeData(tujuan, bobot))
+        self.adj_list[tujuan].prepend(GraphNodeData(asal, bobot))
 
-    def tetangga(self, kode: str) -> list:
-        if kode not in self._adj:
-            return []
-        return self._adj[kode].semua()
+    def get_tetangga(self, kode_lokasi):
+        hasil = []
+        if kode_lokasi in self.adj_list:
+            saat_ini = self.adj_list[kode_lokasi].head
+            while saat_ini is not None:
+                hasil.append((saat_ini.data.tujuan, saat_ini.data.bobot))
+                saat_ini = saat_ini.next
+        return hasil
 
-    def bfs_dari_depot(self, depot: str) -> set:
-        if depot not in self._adj:
+    def get_all_nodes(self):
+        return list(self.adj_list.keys())
+
+    def bfs_deteksi_terjangkau(self, depot_asal):
+        if depot_asal not in self.adj_list:
             return set()
+        
         dikunjungi = set()
-        antrian    = [depot]
-        dikunjungi.add(depot)
-        while antrian:
-            saat_ini = antrian.pop(0)
-            for (tetangga, _) in self._adj[saat_ini].semua():
+        queue = [depot_asal]
+        dikunjungi.add(depot_asal)
+
+        while len(queue) > 0:
+            node_sekarang = queue.pop(0)
+            saat_ini = self.adj_list[node_sekarang].head
+            while saat_ini is not None:
+                tetangga = saat_ini.data.tujuan
                 if tetangga not in dikunjungi:
                     dikunjungi.add(tetangga)
-                    antrian.append(tetangga)
+                    queue.append(tetangga)
+                saat_ini = saat_ini.next
         return dikunjungi
 
-    def lokasi_tidak_terjangkau(self, depot: str) -> set:
-        return self._nodes - self.bfs_dari_depot(depot)
+    def tampilkan_graf(self):
+        print("\n=== REPRESENTASI ADJACENCY LIST GRAPH ===")
+        for node, linked_list in self.adj_list.items():
+            cetak_tetangga = []
+            saat_ini = linked_list.head
+            while saat_ini is not None:
+                cetak_tetangga.append(f"{saat_ini.data.tujuan}({saat_ini.data.bobot}km)")
+                saat_ini = saat_ini.next
+            str_tetangga = " -> ".join(cetak_tetangga) if cetak_tetangga else "Tidak ada tetangga"
+            print(f"[Node {node}] : {str_tetangga}")
+        print("===========================================")
 
-    def dijkstra(self, asal: str) -> tuple:
-        INF   = float('inf')
-        jarak = {n: INF  for n in self._nodes}
-        prev  = {n: None for n in self._nodes}
-        jarak[asal]      = 0
-        belum_dikunjungi = set(self._nodes)
-        while belum_dikunjungi:
-            u = min(belum_dikunjungi, key=lambda n: jarak[n])
-            if jarak[u] == INF:
-                break
-            belum_dikunjungi.remove(u)
-            for (v, bobot) in self._adj[u].semua():
-                alt = jarak[u] + bobot
-                if alt < jarak[v]:
-                    jarak[v] = alt
-                    prev[v]  = u
-        return jarak, prev
+class TestGraphJaringanRute(unittest.TestCase):
+    def setUp(self):
+        self.graph = GraphJaringanRute()
 
-    def rute_optimal(self, asal: str, tujuan: str) -> tuple:
-        jarak, prev = self.dijkstra(asal)
-        path, cur   = [], tujuan
-        while cur is not None:
-            path.append(cur)
-            cur = prev[cur]
-        path.reverse()
-        if path and path[0] == asal:
-            return jarak[tujuan], path
-        return float('inf'), []
+    def test_implementasi_graph(self):
+        print("\n[MULAI] Menjalankan pengujian murni struktur data Graph...")
+        
+        self.graph.tambah_node("DEPOT_0")
+        self.graph.tambah_node("LOK_01")
+        self.assertIn("DEPOT_0", self.graph.get_all_nodes())
+        self.assertIn("LOK_01", self.graph.get_all_nodes())
+        print("[SUKSES] Tambah node berhasil diverifikasi.")
 
-    def jumlah_node(self) -> int:
-        return len(self._nodes)
+        self.graph.tambah_rute("DEPOT_0", "LOK_01", 12)
+        self.graph.tambah_rute("LOK_01", "LOK_02", 8)
+        self.graph.tambah_node("LOK_ISOLASI")
+        
+        tetangga_depot = self.graph.get_tetangga("DEPOT_0")
+        self.assertEqual(len(tetangga_depot), 1)
+        self.assertEqual(tetangga_depot[0], ("LOK_01", 12))
+        print("[SUKSES] Relasi rute berbobot antar node valid.")
 
-    def semua_node(self) -> set:
-        return set(self._nodes)
+        self.graph.tampilkan_graf()
+        print("[SUKSES] Visualisasi struktur graf berhasil diprint ke terminal.")
 
-    def tampilkan(self):
-        print("\n=== ADJACENCY LIST GRAF ===")
-        for kode in sorted(self._adj):
-            label  = " [DEPOT]" if kode in self.depots else ""
-            tetang = self._adj[kode].semua()
-            print(f"  {kode}{label} -> {tetang}")
-        print(f"Total node: {self.jumlah_node()}")
-        print("===========================\n")
+        terjangkau = self.graph.bfs_deteksi_terjangkau("DEPOT_0")
+        self.assertIn("DEPOT_0", terjangkau)
+        self.assertIn("LOK_01", terjangkau)
+        self.assertIn("LOK_02", terjangkau)
+        self.assertNotIn("LOK_ISOLASI", terjangkau)
+        print(f"[SUKSES] BFS berhasil mendeteksi area terisolasi: {terjangkau}")
 
-
-# ============================================================
-#  DRIVER CODE — Jalankan langsung untuk melihat output
-# ============================================================
 if __name__ == "__main__":
-
-    print("╔══════════════════════════════════════════════╗")
-    print("║       SIMULASI GRAPH JARINGAN RUTE           ║")
-    print("╚══════════════════════════════════════════════╝")
-
-    # ── 1. INISIALISASI GRAF ────────────────────────────────
-    g = Graph()
-
-    for depot in ["DEPOT_0", "DEPOT_1", "DEPOT_2"]:
-        g.tambah_node(depot, adalah_depot=True)
-
-    rute_data = [
-        ("DEPOT_0", "LOK_001", 12),
-        ("DEPOT_0", "LOK_002",  8),
-        ("DEPOT_0", "LOK_003", 25),
-        ("DEPOT_1", "LOK_003",  5),
-        ("DEPOT_1", "LOK_004", 15),
-        ("DEPOT_2", "LOK_005", 20),
-        ("DEPOT_2", "LOK_006", 10),
-        ("LOK_001", "LOK_002",  6),
-        ("LOK_003", "LOK_005",  9),
-        ("LOK_004", "LOK_006",  7),
-    ]
-    for asal, tujuan, jarak in rute_data:
-        g.tambah_rute(asal, tujuan, jarak)
-
-    # ── 2. TAMPILKAN ADJACENCY LIST ─────────────────────────
-    g.tampilkan()
-
-    # ── 3. CEK TETANGGA ─────────────────────────────────────
-    print(">>> Tetangga DEPOT_0:")
-    for tujuan, jarak in g.tetangga("DEPOT_0"):
-        print(f"    -> {tujuan}  ({jarak} km)")
-
-    # ── 4. BFS DARI DEPOT ───────────────────────────────────
-    print("\n>>> BFS dari DEPOT_1 (semua lokasi terjangkau):")
-    terjangkau = g.bfs_dari_depot("DEPOT_1")
-    for lok in sorted(terjangkau):
-        print(f"    v {lok}")
-
-    # ── 5. LOKASI TIDAK TERJANGKAU ──────────────────────────
-    print("\n>>> Lokasi TIDAK terjangkau dari DEPOT_1:")
-    tidak = g.lokasi_tidak_terjangkau("DEPOT_1")
-    if tidak:
-        for lok in sorted(tidak):
-            print(f"    x {lok}")
-    else:
-        print("    Semua lokasi terjangkau.")
-
-    # ── 6. RUTE OPTIMAL (DIJKSTRA) ──────────────────────────
-    pasangan_rute = [
-        ("DEPOT_0", "LOK_005"),
-        ("DEPOT_1", "LOK_006"),
-        ("DEPOT_2", "LOK_001"),
-    ]
-    print("\n>>> Rute Optimal (Dijkstra):")
-    print(f"  {'ASAL':<12} {'TUJUAN':<12} {'JARAK':>8}   PATH")
-    print(f"  {'-'*12} {'-'*12} {'-'*8}   {'-'*30}")
-    for asal, tujuan in pasangan_rute:
-        jarak, path = g.rute_optimal(asal, tujuan)
-        jarak_str   = f"{jarak} km" if jarak != float('inf') else "tidak terjangkau"
-        path_str    = " -> ".join(path) if path else "-"
-        print(f"  {asal:<12} {tujuan:<12} {jarak_str:>8}   {path_str}")
-
-    # ── 7. STATISTIK GRAF ───────────────────────────────────
-    print(f"\n>>> Statistik Graf:")
-    print(f"    Total node  : {g.jumlah_node()}")
-    print(f"    Total depot : {len(g.depots)}  -> {g.depots}")
-    print(f"    Semua node  : {sorted(g.semua_node())}")
+    unittest.main()
