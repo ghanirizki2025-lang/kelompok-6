@@ -1,203 +1,96 @@
 import unittest
 
-# ============================================================
-# 1. PURE DATA STRUCTURE : GRAPH (Salin ulang kode murni kamu)
-# ============================================================
-class EdgeNode:
-    def __init__(self, vertex: str, bobot: float = 1.0):
-        self.vertex = vertex
-        self.bobot  = bobot
-        self.next   = None
+class GraphNodeData:
+    def __init__(self, tujuan, bobot):
+        self.tujuan = tujuan
+        self.bobot = bobot
 
-class EdgeList:
+class GraphJaringanRute:
     def __init__(self):
-        self.head  = None
-        self._size = 0
+        self.adj_list = {}
 
-    def tambah(self, vertex: str, bobot: float = 1.0):
-        node       = EdgeNode(vertex, bobot)
-        node.next  = self.head
-        self.head  = node
-        self._size += 1
+    def tambah_node(self, kode_lokasi):
+        if kode_lokasi not in self.adj_list:
+            self.adj_list[kode_lokasi] = LinkedList()
 
-    def hapus(self, vertex: str) -> bool:
-        if self.head is None: return False
-        if self.head.vertex == vertex:
-            self.head  = self.head.next
-            self._size -= 1
-            return True
-        cur = self.head
-        while cur.next:
-            if cur.next.vertex == vertex:
-                cur.next   = cur.next.next
-                self._size -= 1
-                return True
-            cur = cur.next
-        return False
+    def tambah_rute(self, asal, tujuan, bobot):
+        self.tambah_node(asal)
+        self.tambah_node(tujuan)
+        self.adj_list[asal].prepend(GraphNodeData(tujuan, bobot))
+        self.adj_list[tujuan].prepend(GraphNodeData(asal, bobot))
 
-    def ada(self, vertex: str) -> bool:
-        cur = self.head
-        while cur:
-            if cur.vertex == vertex: return True
-            cur = cur.next
-        return False
-
-    def semua(self) -> list:
-        hasil, cur = [], self.head
-        while cur:
-            hasil.append((cur.vertex, cur.bobot))
-            cur = cur.next
+    def get_tetangga(self, kode_lokasi):
+        hasil = []
+        if kode_lokasi in self.adj_list:
+            saat_ini = self.adj_list[kode_lokasi].head
+            while saat_ini is not None:
+                hasil.append((saat_ini.data.tujuan, saat_ini.data.bobot))
+                saat_ini = saat_ini.next
         return hasil
 
-    def __len__(self):
-        return self._size
+    def get_all_nodes(self):
+        return list(self.adj_list.keys())
 
-class Graph:
-    def __init__(self, berarah: bool = False):
-        self._adj     = {}         # {vertex -> EdgeList}
-        self._berarah = berarah    # False = undirected
-
-    def tambah_vertex(self, v: str):
-        if v not in self._adj:
-            self._adj[v] = EdgeList()
-
-    def hapus_vertex(self, v: str) -> bool:
-        if v not in self._adj: return False
-        del self._adj[v]
-        for u in self._adj:
-            self._adj[u].hapus(v)
-        return True
-
-    def semua_vertex(self) -> list:
-        return list(self._adj.keys())
-
-    def jumlah_vertex(self) -> int:
-        return len(self._adj)
-
-    def tambah_edge(self, u: str, v: str, bobot: float = 1.0):
-        for vertex in (u, v):
-            self.tambah_vertex(vertex)
-        self._adj[u].tambah(v, bobot)
-        if not self._berarah:
-            self._adj[v].tambah(u, bobot)
-
-    def ada_edge(self, u: str, v: str) -> bool:
-        if u not in self._adj: return False
-        return self._adj[u].ada(v)
-
-    def derajat(self, v: str) -> int:
-        if v not in self._adj: return 0
-        return len(self._adj[v])
-
-    def jumlah_edge(self) -> int:
-        total = sum(len(self._adj[v]) for v in self._adj)
-        return total if self._berarah else total // 2
-
-    def bfs(self, start: str) -> list:
-        if start not in self._adj: return []
+    def bfs_deteksi_terjangkau(self, depot_asal):
+        if depot_asal not in self.adj_list:
+            return set()
+        
         dikunjungi = set()
-        urutan     = []
-        antrian    = [start]
-        dikunjungi.add(start)
-        while antrian:
-            v = antrian.pop(0)
-            urutan.append(v)
-            for (tetangga, _) in self._adj[v].semua():
+        queue = [depot_asal]
+        dikunjungi.add(depot_asal)
+
+        while len(queue) > 0:
+            node_sekarang = queue.pop(0)
+            saat_ini = self.adj_list[node_sekarang].head
+            while saat_ini is not None:
+                tetangga = saat_ini.data.tujuan
                 if tetangga not in dikunjungi:
                     dikunjungi.add(tetangga)
-                    antrian.append(tetangga)
-        return urutan
+                    queue.append(tetangga)
+                saat_ini = saat_ini.next
+        return dikunjungi
 
-    def dijkstra(self, sumber: str) -> tuple:
-        INF    = float('inf')
-        jarak  = {v: INF  for v in self._adj}
-        prev   = {v: None for v in self._adj}
-        jarak[sumber] = 0
-        belum  = set(self._adj.keys())
-        while belum:
-            u = min(belum, key=lambda x: jarak[x])
-            if jarak[u] == INF: break
-            belum.remove(u)
-            for (v, w) in self._adj[u].semua():
-                alt = jarak[u] + w
-                if alt < jarak[v]:
-                    jarak[v] = alt
-                    prev[v]  = u
-        return jarak, prev
+    def tampilkan_graf(self):
+        print("\n=== REPRESENTASI ADJACENCY LIST GRAPH ===")
+        for node, linked_list in self.adj_list.items():
+            cetak_tetangga = []
+            saat_ini = linked_list.head
+            while saat_ini is not None:
+                cetak_tetangga.append(f"{saat_ini.data.tujuan}({saat_ini.data.bobot}km)")
+                saat_ini = saat_ini.next
+            str_tetangga = " -> ".join(cetak_tetangga) if cetak_tetangga else "Tidak ada tetangga"
+            print(f"[Node {node}] : {str_tetangga}")
+        print("===========================================")
 
-    def jalur_terpendek(self, sumber: str, tujuan: str) -> tuple:
-        jarak, prev = self.dijkstra(sumber)
-        path, cur   = [], tujuan
-        while cur is not None:
-            path.append(cur)
-            cur = prev[cur]
-        path.reverse()
-        if path and path[0] == sumber:
-            return jarak[tujuan], path
-        return float('inf'), []
-
-    def ada_siklus(self) -> bool:
-        dikunjungi = set()
-        def dfs_siklus(v, parent):
-            dikunjungi.add(v)
-            for (tetangga, _) in self._adj[v].semua():
-                if tetangga not in dikunjungi:
-                    if dfs_siklus(tetangga, v): return True
-                elif tetangga != parent: return True
-            return False
-        for v in self._adj:
-            if v not in dikunjungi:
-                if dfs_siklus(v, None): return True
-        return False
-
-    def terhubung(self) -> bool:
-        if not self._adj: return True
-        start  = next(iter(self._adj))
-        return len(self.bfs(start)) == len(self._adj)
-
-
-# ============================================================
-# 2. SEKENARIO UNIT TESTING (Bagian yang tadinya Error)
-# ============================================================
-class TestGraphMurni(unittest.TestCase):
-
+class TestGraphDenganLinkedList(unittest.TestCase):
     def setUp(self):
-        """Sekarang kelas Graph di atas sudah pasti terbaca!"""
-        self.g = Graph(berarah=False)
+        self.graph = GraphJaringanRute()
 
-    def test_tambah_and_jumlah_vertex(self):
-        self.g.tambah_vertex("DEPOT_A")
-        self.g.tambah_vertex("L001")
-        self.assertEqual(self.g.jumlah_vertex(), 2)
+    def test_graph_operations(self):
+        self.graph.tambah_node("DEPOT_0")
+        self.graph.tambah_node("LOK_01")
+        self.assertIn("DEPOT_0", self.graph.get_all_nodes())
+        self.assertIn("LOK_01", self.graph.get_all_nodes())
 
-    def test_tambah_edge_undirected_dua_arah(self):
-        self.g.tambah_edge("DEPOT_A", "L001", 5.0)
-        self.assertEqual(self.g.jumlah_edge(), 1)
-        self.assertTrue(self.g.ada_edge("DEPOT_A", "L001"))
-        self.assertTrue(self.g.ada_edge("L001", "DEPOT_A"))
+        self.graph.tambah_rute("DEPOT_0", "LOK_01", 15)
+        self.graph.tambah_rute("LOK_01", "LOK_02", 10)
+        self.graph.tambah_node("LOK_TERISOLASI")
 
-    def test_hapus_vertex_dan_pembersihan_edge(self):
-        self.g.tambah_edge("DEPOT_A", "L001", 5.0)
-        self.g.tambah_edge("L001", "L002", 7.0)
-        self.g.hapus_vertex("L001")
-        self.assertEqual(self.g.jumlah_vertex(), 2)
-        self.assertFalse(self.g.ada_edge("DEPOT_A", "L001"))
+        tetangga_depot = self.graph.get_tetangga("DEPOT_0")
+        self.assertEqual(len(tetangga_depot), 1)
+        self.assertEqual(tetangga_depot[0][0], "LOK_01")
+        self.assertEqual(tetangga_depot[0][1], 15)
 
-    def test_dijkstra_jalur_terpendek(self):
-        self.g.tambah_edge("A", "B", 5.0)
-        self.g.tambah_edge("B", "C", 2.0)
-        self.g.tambah_edge("A", "C", 12.0)
-        total_bobot, rute = self.g.jalur_terpendek("A", "C")
-        self.assertEqual(total_bobot, 7.0)
-        self.assertEqual(rute, ["A", "B", "C"])
+        tetangga_lok01 = self.graph.get_tetangga("LOK_01")
+        self.assertEqual(len(tetangga_lok01), 2)
 
-    def test_deteksi_siklus_dan_konektivitas(self):
-        self.g.tambah_edge("A", "B")
-        self.g.tambah_edge("B", "C")
-        self.assertFalse(self.g.ada_siklus())
-        self.g.tambah_edge("C", "A")
-        self.assertTrue(self.g.ada_siklus())
+        self.graph.tampilkan_graf()
 
+        terjangkau = self.graph.bfs_deteksi_terjangkau("DEPOT_0")
+        self.assertIn("DEPOT_0", terjangkau)
+        self.assertIn("LOK_01", terjangkau)
+        self.assertIn("LOK_02", terjangkau)
+        self.assertNotIn("LOK_TERISOLASI", terjangkau)
 
 if __name__ == "__main__":
     unittest.main()
