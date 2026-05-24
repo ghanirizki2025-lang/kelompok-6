@@ -1,7 +1,7 @@
 import sys
 
 # ==============================================================================
-# MOCK-UP MODUL 1 - 5 (Diperlukan agar CLI Modul 6 bisa berjalan & di-test)
+# MOCK-UP MODULE 1 - 5 (Diperlukan agar CLI Module 6 bisa berjalan & di-test)
 # ==============================================================================
 
 class DummyGraph:
@@ -66,7 +66,7 @@ def dummy_dijkstra(start, target):
     return [start, target], 15
 
 # ==============================================================================
-# UTAMA: MODUL 6 - CLI LOGISTIK
+# UTAMA: MODULE 6 - CLI LOGISTIK
 # ==============================================================================
 
 class CLILogistik:
@@ -113,10 +113,10 @@ class CLILogistik:
                 
                 # Mengambil tingkat prioritas lokasi berdasarkan data di BST Registry
                 info_lokasi = self.bst_lokasi.data.get(lokasi, {"level": 2})
-                level_prioritas = info_lokasi["level"] 
+                level_prioritas = info_lokasi["level"]
                 
                 item_bantuan = {
-                    "depot": depot, "lokasi": lokasi, 
+                    "depot": depot, "lokasi": lokasi,
                     "jenis": jenis, "jumlah": jumlah
                 }
                 # Masukkan ke antrean Priority Queue

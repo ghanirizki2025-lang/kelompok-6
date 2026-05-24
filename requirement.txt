@@ -1,0 +1,80 @@
+# =========================================================
+# Disaster Response Logistics System (Kelompok 6)
+# Requirements & Project Specification
+# =========================================================
+
+# Python minimum version
+python>=3.10
+
+# Testing framework untuk verifikasi keandalan struktur data & fitur
+pytest>=8.0.0
+
+# =========================================================
+# Project Modules Mapping
+# =========================================================
+# data_structures/
+#   ├── BST_Registry_Lokasi.py     -> Binary Search Tree untuk registrasi & update level bencana
+#   ├── Graph_Jaringan_Rute.py     -> Graph (Adjacency List) jaringan jalur transportasi antar depot
+#   ├── linked_list.py             -> Struktur data dasar Linked List kustom
+#   ├── Priority_Queue_Bantuan.py  -> Priority Queue terurut untuk antrean bantuan (Kritis -> Ringan)
+#   └── Stack_Log_Pengiriman.py    -> Stack untuk menyimpan log transaksi sukses (Mendukung ROLLBACK)
+#
+# modules/
+#   ├── modul_BST.py               -> Logika pencarian & pembaruan level keparahan bencana lokasi
+#   ├── modul_Dijkstra.py          -> Algoritma pencarian rute distribusi terpendek dari depot
+#   ├── modul_Graph.py             -> Operasi Graph & Filter BFS untuk mendeteksi lokasi terisolasi
+#   ├── modul_Queue.py             -> Logika manajemen & sorting prioritas antrean bantuan
+#   ├── modul_Stack.py             -> Logika manajemen log pengiriman (LIFO) & fungsi pembatalan
+#   └── module_CLI.py              -> Antarmuka menu interaktif (KIRIM, PROSES, RUTE OPTIMAL, dll.)
+#
+# tests/
+#   ├── test_BST.py                -> Unit Testing untuk validasi pohon BST & update level
+#   ├── test_Graph.py              -> Unit Testing untuk fungsi Dijkstra & deteksi BFS lokasi terisolasi
+#   ├── test_Lingked.py            -> Unit Testing keandalan fungsionalitas dasar Linked List
+#   ├── test_Queue.py              -> Unit Testing untuk mekanisme pengurutan Priority Queue
+#   └── test_stack.py              -> Unit Testing untuk fungsionalitas Stack & ketepatan ROLLBACK
+#
+# No external computational or GUI libraries required.
+# Implementation from scratch using Python Standard Library only.
+
+AI_Log/
+│   ├── Log_prompt.txt
+│   └── screenshoot/
+│
+├── docs/
+│   ├── laporan_final.pdf
+│   └── slide_presentasi.pdf
+│
+├── experiments/
+│   └── benchmark.py
+│
+├── feat/
+│
+├── src/
+│   ├── data_structures/
+│   │   ├── BST_Registry_Lokasi.py
+│   │   ├── Graph_Jaringan_Rute.py
+│   │   ├── linked_list.py
+│   │   ├── Priority_Queue_Bantuan.py
+│   │   └── Stack_Log_Pengiriman.py
+│   │
+│   ├── modules/
+│   │   ├── modul_BST.py
+│   │   ├── modul_Dijkstra.py
+│   │   ├── modul_Graph.py
+│   │   ├── modul_Queue.py
+│   │   ├── modul_Stack.py
+│   │   └── module_CLI.py
+│   │
+│   └── main.py
+│
+├── tests/
+│   ├── test_BST.py
+│   ├── test_Graph.py
+│   ├── test_Lingked.py
+│   ├── test_Queue.py
+│   └── test_stack.py
+│
+├── .gitignore
+├── README.md
+└── requirements.txt
