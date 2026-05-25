@@ -1,0 +1,33 @@
+================================================================================
+DOKUMENTASI SISTEM & PANDUAN GIT/GITHUB (QUESTIONS ONLY)
+Project: Disaster Response Logistics System (KELOMPOK-6)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. CARA MENGHUBUNGKAN VSCODE KE GITHUB
+--------------------------------------------------------------------------------
+- Bagaimana langkah-langkah murni untuk menginisialisasi Git lokal, mengatur identitas global, menambahkan remote repository GitHub, hingga menyelesaikan proses autentikasi akun melalui terminal VSCode?
+
+--------------------------------------------------------------------------------
+2. CARA BRANCHING & MERGING (DARI DEV KE MAIN)
+--------------------------------------------------------------------------------
+- Bagaimana alur kerja dan urutan perintah git yang benar untuk menyimpan perubahan di branch 'dev', berpindah ke branch 'main', memperbarui kode lokal, lalu menggabungkan (merge) seluruh fitur dari 'dev' ke 'main' sebelum dikirim ke GitHub?
+
+--------------------------------------------------------------------------------
+3. KONSEP STACK PADA DISASTER RESPONSE LOGISTICS SYSTEM
+--------------------------------------------------------------------------------
+- Bagaimana sifat dasar struktur data Stack (LIFO) diterapkan dalam arsitektur sistem tanggap bencana ini, serta apa fungsi dari operasi LOG_PENGIRIMAN (Push) dan ROLLBACK (Pop) dalam kaitannya dengan pelacakan dan pembatalan transaksi pengiriman logistik?
+
+--------------------------------------------------------------------------------
+4. SUMMARY & DESCRIPTION BERDASARKAN SEMUA CODE
+--------------------------------------------------------------------------------
+- Apa ringkasan sistem (System Summary) dari manajemen logistik bencana ini terkait jumlah node dan integrasi strukturnya, serta bagaimana deskripsi beserta peran operasional dari masing-masing komponen kode berikut:
+  1. linked_list.py (Singly Linked List)
+  2. Graph_Jaringan_Rute.py (Undirected Weighted Graph)
+  3. Priority_Queue_Bantuan.py (Priority Queue)
+  4. BST_Registry_Lokasi.py (Binary Search Tree)
+  5. stack.py (Stack)
+
+================================================================================
+END OF DOCUMENT
+================================================================================
